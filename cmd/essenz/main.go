@@ -11,9 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/essenz/essenz/internal/browser"
-	"github.com/essenz/essenz/internal/daemon"
-	"github.com/essenz/essenz/internal/extractor"
+	"github.com/jewell-lgtm/essenz/internal/browser"
+	"github.com/jewell-lgtm/essenz/internal/daemon"
+	"github.com/jewell-lgtm/essenz/internal/extractor"
+	"github.com/jewell-lgtm/essenz/internal/pageready"
 	"github.com/spf13/cobra"
 )
 
@@ -22,6 +23,12 @@ var version = "0.1.0"
 // Command line flags
 var readerView bool
 var rawOutput bool
+
+// DOM ready event flags
+var waitForFrameworks bool
+var domReadyTimeout string
+var waitForSelector string
+var debugReadiness bool
 
 var rootCmd = &cobra.Command{
 	Use:   "sz [URL or file path]",
@@ -190,9 +197,17 @@ func init() {
 
 	// Add flags to root command
 	rootCmd.Flags().BoolVar(&rawOutput, "raw", false, "Output raw HTML without reader view processing")
+	rootCmd.Flags().BoolVar(&waitForFrameworks, "wait-for-frameworks", false, "Enable framework-specific readiness detection (React, Vue, Next.js)")
+	rootCmd.Flags().StringVar(&domReadyTimeout, "dom-ready-timeout", "5s", "Timeout for DOM readiness detection")
+	rootCmd.Flags().StringVar(&waitForSelector, "wait-for-selector", "", "Wait for specific CSS selector to appear before extraction")
+	rootCmd.Flags().BoolVar(&debugReadiness, "debug-readiness", false, "Show detailed DOM readiness detection information")
 
 	// Add flags to fetch command
 	fetchCmd.Flags().BoolVarP(&readerView, "reader-view", "r", false, "Extract main content and convert to clean markdown")
+	fetchCmd.Flags().BoolVar(&waitForFrameworks, "wait-for-frameworks", false, "Enable framework-specific readiness detection (React, Vue, Next.js)")
+	fetchCmd.Flags().StringVar(&domReadyTimeout, "dom-ready-timeout", "5s", "Timeout for DOM readiness detection")
+	fetchCmd.Flags().StringVar(&waitForSelector, "wait-for-selector", "", "Wait for specific CSS selector to appear before extraction")
+	fetchCmd.Flags().BoolVar(&debugReadiness, "debug-readiness", false, "Show detailed DOM readiness detection information")
 
 	// Add all commands to root
 	rootCmd.AddCommand(versionCmd)
@@ -216,10 +231,55 @@ func readFile(filepath string) (string, error) {
 	return string(content), nil
 }
 
+// createReadinessChecker creates a ReadinessChecker based on CLI flags
+func createReadinessChecker() (*pageready.ReadinessChecker, error) {
+	// Only create checker if any DOM ready flags are set
+	if !waitForFrameworks && domReadyTimeout == "5s" && waitForSelector == "" && !debugReadiness {
+		return nil, nil // Use default behavior
+	}
+
+	checker := pageready.NewReadinessChecker()
+
+	// Parse timeout
+	if domReadyTimeout != "5s" {
+		timeout, err := time.ParseDuration(domReadyTimeout)
+		if err != nil {
+			return nil, fmt.Errorf("invalid timeout format: %w", err)
+		}
+		checker = checker.WithTimeout(timeout)
+	}
+
+	// Set framework hints
+	if waitForFrameworks {
+		// Enable common framework detection
+		checker = checker.WithFrameworkHints([]string{"react", "vue", "angular", "nextjs"})
+	}
+
+	// Set custom selectors
+	if waitForSelector != "" {
+		checker = checker.WithCustomSelectors([]string{waitForSelector})
+	}
+
+	// Set debug mode
+	checker = checker.WithDebug(debugReadiness)
+
+	return checker, nil
+}
+
 // fetchURLWithChrome fetches content using Chrome browser automation
 func fetchURLWithChrome(ctx context.Context, url string) (string, error) {
 	client := browser.NewClient()
 	defer client.Shutdown()
+
+	// Configure DOM readiness if flags are set
+	checker, err := createReadinessChecker()
+	if err != nil {
+		return "", fmt.Errorf("failed to configure DOM readiness: %w", err)
+	}
+
+	if checker != nil {
+		client = client.WithReadinessChecker(checker)
+	}
 
 	content, err := client.FetchContent(ctx, url)
 	if err != nil {

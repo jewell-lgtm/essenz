@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/jewell-lgtm/essenz/internal/pageready"
 )
 
 // Client communicates with the Chrome daemon.
@@ -69,6 +71,21 @@ func (c *Client) FetchContent(_ context.Context, url string) (string, error) {
 	}
 
 	return resp.Content, nil
+}
+
+// FetchContentWithReadiness fetches content via the daemon with DOM readiness detection.
+func (c *Client) FetchContentWithReadiness(ctx context.Context, url string, _ *pageready.ReadinessChecker) (string, error) {
+	// For now, implement this by falling back to regular fetch
+	// TODO: Extend the daemon protocol to support readiness checking
+	content, err := c.FetchContent(ctx, url)
+	if err != nil {
+		return "", err
+	}
+
+	// TODO: In future iterations, we'll integrate the readiness checker
+	// into the daemon server for proper DOM event waiting
+
+	return content, nil
 }
 
 // Ping checks if the daemon is responsive.

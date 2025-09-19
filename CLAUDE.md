@@ -17,7 +17,7 @@
 **essenz (sz)** - A CLI web browser that extracts the essence of web pages, reordering content by importance rather than DOM structure. Built with Go and powered by headless Chrome for handling modern JavaScript-heavy sites while producing clean, readable markdown.
 
 - **Primary Binary**: `sz` (built from `./cmd/essenz`)
-- **Module Path**: `github.com/essenz/essenz`
+- **Module Path**: `github.com/jewell-lgtm/essenz`
 - **Go Version**: 1.23.3 (managed via asdf)
 - **Current Version**: 0.1.0
 

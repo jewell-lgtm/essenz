@@ -19,10 +19,10 @@
 
 ```bash
 # Install with Go
-go install github.com/essenz/essenz/cmd/essenz@latest
+go install github.com/jewell-lgtm/essenz/cmd/essenz@latest
 
 # Or download binary from releases
-curl -L https://github.com/essenz/essenz/releases/latest/download/sz-$(uname -s)-$(uname -m) -o sz
+curl -L https://github.com/jewell-lgtm/essenz/releases/latest/download/sz-$(uname -s)-$(uname -m) -o sz
 chmod +x sz
 sudo mv sz /usr/local/bin/
 ```
@@ -171,7 +171,7 @@ sz --format=html https://example.com
 
 ```bash
 # Clone repository
-git clone https://github.com/essenz/essenz
+git clone https://github.com/jewell-lgtm/essenz
 cd essenz
 
 # Install correct tool versions
@@ -435,7 +435,7 @@ Essenz can also be used as a Go library:
 package main
 
 import (
-    "github.com/essenz/essenz/pkg/essenz"
+    "github.com/jewell-lgtm/essenz/pkg/essenz"
 )
 
 func main() {
@@ -467,9 +467,9 @@ MIT License - See [LICENSE](LICENSE) file
 
 ## Support
 
-- 🐛 [Report bugs](https://github.com/essenz/essenz/issues)
-- 💡 [Request features](https://github.com/essenz/essenz/issues)
-- 💬 [Discussions](https://github.com/essenz/essenz/discussions)
+- 🐛 [Report bugs](https://github.com/jewell-lgtm/essenz/issues)
+- 💡 [Request features](https://github.com/jewell-lgtm/essenz/issues)
+- 💬 [Discussions](https://github.com/jewell-lgtm/essenz/discussions)
 - 📖 [Documentation](https://essenz.dev/docs)
 
 ---

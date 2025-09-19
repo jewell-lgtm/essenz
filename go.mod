@@ -1,4 +1,4 @@
-module github.com/essenz/essenz
+module github.com/jewell-lgtm/essenz
 
 go 1.24.0
 
