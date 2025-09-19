@@ -267,6 +267,9 @@ func (tb *TreeBuilder) ToText(root *TextNode) string {
 
 // writeTextNode recursively writes nodes in text format.
 func (tb *TreeBuilder) writeTextNode(builder *strings.Builder, node *TextNode, indent string) {
+	if node == nil {
+		return // Skip nil nodes gracefully
+	}
 	if node.Tag == "#text" {
 		text := strings.TrimSpace(node.Text)
 		if text != "" {

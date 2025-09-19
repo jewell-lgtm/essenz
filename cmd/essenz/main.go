@@ -14,6 +14,7 @@ import (
 	"github.com/jewell-lgtm/essenz/internal/browser"
 	"github.com/jewell-lgtm/essenz/internal/daemon"
 	"github.com/jewell-lgtm/essenz/internal/extractor"
+	"github.com/jewell-lgtm/essenz/internal/filter"
 	"github.com/jewell-lgtm/essenz/internal/pageready"
 	"github.com/jewell-lgtm/essenz/internal/tree"
 	"github.com/spf13/cobra"
@@ -36,6 +37,11 @@ var textNodeTree bool
 var treeFormat string
 var filterNavigation bool
 var preserveAttributes bool
+
+// Content filter flags (F3)
+var contentFilter bool
+var aggressiveFiltering bool
+var preserveSelector string
 
 var rootCmd = &cobra.Command{
 	Use:   "sz [URL or file path]",
@@ -112,6 +118,41 @@ Examples:
 			}
 
 			// Skip reader view processing when text node tree is enabled
+			_, _ = fmt.Fprint(cmd.OutOrStdout(), content)
+			return
+		}
+
+		// Apply content filtering if requested
+		if contentFilter {
+			// Build tree first
+			treeBuilder := tree.NewTreeBuilder().
+				WithFilterNavigation(false). // Don't use tree builder filtering, use content filter instead
+				WithPreserveAttributes(true) // Preserve attributes for filtering decisions
+
+			root, err := treeBuilder.BuildTree(cmd.Context(), content)
+			if err != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error building tree for content filtering: %v\n", err)
+				os.Exit(1)
+			}
+
+			// Apply content filtering
+			contentFilterer := filter.NewContentFilter().
+				WithAggressiveMode(aggressiveFiltering)
+
+			if preserveSelector != "" {
+				contentFilterer = contentFilterer.WithPreserveSelector(preserveSelector)
+			}
+
+			filtered, err := contentFilterer.FilterTree(cmd.Context(), root)
+			if err != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error applying content filter: %v\n", err)
+				os.Exit(1)
+			}
+
+			// Convert filtered tree back to readable text
+			content = treeBuilder.ToText(filtered)
+
+			// Skip reader view processing when content filter is enabled
 			_, _ = fmt.Fprint(cmd.OutOrStdout(), content)
 			return
 		}
@@ -215,6 +256,41 @@ Examples:
 			return
 		}
 
+		// Apply content filtering if requested
+		if contentFilter {
+			// Build tree first
+			treeBuilder := tree.NewTreeBuilder().
+				WithFilterNavigation(false). // Don't use tree builder filtering, use content filter instead
+				WithPreserveAttributes(true) // Preserve attributes for filtering decisions
+
+			root, err := treeBuilder.BuildTree(cmd.Context(), content)
+			if err != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error building tree for content filtering: %v\n", err)
+				os.Exit(1)
+			}
+
+			// Apply content filtering
+			contentFilterer := filter.NewContentFilter().
+				WithAggressiveMode(aggressiveFiltering)
+
+			if preserveSelector != "" {
+				contentFilterer = contentFilterer.WithPreserveSelector(preserveSelector)
+			}
+
+			filtered, err := contentFilterer.FilterTree(cmd.Context(), root)
+			if err != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error applying content filter: %v\n", err)
+				os.Exit(1)
+			}
+
+			// Convert filtered tree back to readable text
+			content = treeBuilder.ToText(filtered)
+
+			// Skip reader view processing when content filter is enabled
+			_, _ = fmt.Fprint(cmd.OutOrStdout(), content)
+			return
+		}
+
 		// Apply reader view processing if requested
 		if readerView {
 			ext := extractor.New()
@@ -297,6 +373,11 @@ func init() {
 	rootCmd.Flags().BoolVar(&filterNavigation, "filter-navigation", false, "Filter out navigation elements from tree")
 	rootCmd.Flags().BoolVar(&preserveAttributes, "preserve-attributes", false, "Preserve element attributes in tree structure")
 
+	// Content filter flags
+	rootCmd.Flags().BoolVar(&contentFilter, "content-filter", false, "Apply sophisticated content filtering to remove non-content elements")
+	rootCmd.Flags().BoolVar(&aggressiveFiltering, "aggressive-filtering", false, "Enable more aggressive content filtering")
+	rootCmd.Flags().StringVar(&preserveSelector, "preserve-selector", "", "CSS selector to always preserve (can be used multiple times)")
+
 	// Add flags to fetch command
 	fetchCmd.Flags().BoolVarP(&readerView, "reader-view", "r", false, "Extract main content and convert to clean markdown")
 	fetchCmd.Flags().BoolVar(&waitForFrameworks, "wait-for-frameworks", false, "Enable framework-specific readiness detection (React, Vue, Next.js)")
@@ -309,6 +390,11 @@ func init() {
 	fetchCmd.Flags().StringVar(&treeFormat, "tree-format", "text", "Output format for text node tree (text, json)")
 	fetchCmd.Flags().BoolVar(&filterNavigation, "filter-navigation", false, "Filter out navigation elements from tree")
 	fetchCmd.Flags().BoolVar(&preserveAttributes, "preserve-attributes", false, "Preserve element attributes in tree structure")
+
+	// Content filter flags for fetch command
+	fetchCmd.Flags().BoolVar(&contentFilter, "content-filter", false, "Apply sophisticated content filtering to remove non-content elements")
+	fetchCmd.Flags().BoolVar(&aggressiveFiltering, "aggressive-filtering", false, "Enable more aggressive content filtering")
+	fetchCmd.Flags().StringVar(&preserveSelector, "preserve-selector", "", "CSS selector to always preserve (can be used multiple times)")
 
 	// Add all commands to root
 	rootCmd.AddCommand(versionCmd)
