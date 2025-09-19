@@ -1,5 +1,17 @@
 # Claude Code Assistant Context
 
+## 🚨 MANDATORY WORKFLOW - READ FIRST
+
+**CRITICAL: Before implementing ANY feature, Claude MUST:**
+
+1. ✅ Create feature branch from main
+2. ✅ Write executable spec that FAILS initially
+3. ✅ Commit failing spec with `SKIP=go-test`
+4. ✅ Implement with small commits until spec passes
+5. ✅ Squash merge to main and push
+
+**NO EXCEPTIONS. See "MANDATORY Git Workflow" section below for details.**
+
 ## Project Overview
 
 **essenz (sz)** - A CLI web browser that extracts the essence of web pages, reordering content by importance rather than DOM structure. Built with Go and powered by headless Chrome for handling modern JavaScript-heavy sites while producing clean, readable markdown.
@@ -101,17 +113,83 @@ go test -v ./...
 ./sz fetch /path/to/file.html
 ```
 
-## Git Workflow
+## MANDATORY Git Workflow
 
-This project follows a TDD workflow with feature branches:
+**⚠️ CRITICAL: Claude MUST follow this workflow for ALL feature development. No exceptions.**
+
+### Required Workflow Steps
+
+**EVERY feature development MUST follow these exact steps:**
 
 1. **Create feature branch** from main
-2. **Write executable spec** covering entire feature (should fail)
-3. **Initial commit** with `SKIP=go-test` to bypass failing tests
-4. **TDD implementation** with small commits until spec passes
-5. **Refactor** if needed
-6. **Squash merge** to main for clean history
+   ```bash
+   git checkout main
+   git pull origin main
+   git checkout -b feature/descriptive-name
+   ```
+
+2. **Write executable spec** covering entire feature (MUST fail initially)
+   ```bash
+   # Create spec file in specs/
+   # Write comprehensive test covering full feature
+   # Verify it fails: go test ./specs/feature-name.spec.go
+   ```
+
+3. **Initial commit** with hooks skipped (for failing spec)
+   ```bash
+   git add specs/feature-name.spec.go
+   SKIP=go-test git commit -m "feat: add executable spec for [feature]"
+   ```
+
+4. **TDD implementation** with small, focused commits
+   ```bash
+   # Make minimal change
+   make check  # MUST pass before commit
+   git add .
+   git commit -m "feat: implement basic [specific change]"
+   # Repeat until spec passes
+   ```
+
+5. **Refactor** if needed (separate commits)
+   ```bash
+   git commit -m "refactor: improve [specific aspect]"
+   ```
+
+6. **Return to main and squash merge**
+   ```bash
+   git checkout main
+   git merge --squash feature/branch-name
+   git commit -m "feat: implement [complete feature]"
+   ```
+
 7. **Push to GitHub**
+   ```bash
+   git push origin main
+   git branch -d feature/branch-name
+   ```
+
+### Workflow Enforcement Checklist
+
+Before starting ANY feature work, Claude must verify:
+- [ ] Currently on main branch
+- [ ] Main branch is up to date
+- [ ] Feature branch created with descriptive name
+- [ ] Executable spec written and failing
+- [ ] Initial commit made with SKIP=go-test
+
+During development, Claude must verify:
+- [ ] Each commit is small and focused
+- [ ] `make check` passes before every commit
+- [ ] Commit messages follow conventional format
+- [ ] Tests are passing incrementally
+
+Before completing feature, Claude must verify:
+- [ ] All specs are passing
+- [ ] Code is properly formatted and linted
+- [ ] Returned to main branch
+- [ ] Squash merge completed
+- [ ] Changes pushed to GitHub
+- [ ] Feature branch deleted
 
 ### Commit Message Format
 Uses conventional commits enforced by pre-commit hooks:
@@ -181,10 +259,25 @@ Based on README documentation, the project will include:
 
 ## Notes for Claude Code
 
-- Always run `make check` before committing
+### WORKFLOW ENFORCEMENT
+- **ALWAYS follow the mandatory workflow above - no shortcuts**
+- **NEVER implement features directly on main branch**
+- **NEVER skip writing failing specs first**
+- **ALWAYS create feature branch before any code changes**
+- **ALWAYS squash merge and push at completion**
+
+### DEVELOPMENT STANDARDS
+- Always run `make check` before committing (enforced by checklist)
 - Use `SKIP=go-test` only for initial failing spec commits
-- Follow the documented git workflow for feature development
 - Prefer editing existing files over creating new ones
 - Binary is built as `sz` not `essenz`
 - Current implementation is minimal - core features are planned but not implemented
 - When implementing new features, start with executable specs in `specs/` directory
+
+### COMMIT MESSAGE TEMPLATES
+All commits must end with:
+```
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
