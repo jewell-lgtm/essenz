@@ -2,10 +2,13 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -45,8 +48,12 @@ Examples:
 
 		// Check if it looks like a URL (simple heuristic)
 		if strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://") {
-			// TODO: Implement HTTP(S) fetching
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "URL fetching not yet implemented: %s\n", target)
+			content, err := fetchURL(target)
+			if err != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error fetching URL: %v\n", err)
+				os.Exit(1)
+			}
+			_, _ = fmt.Fprint(cmd.OutOrStdout(), content)
 			return
 		}
 
@@ -75,6 +82,36 @@ func readFile(filepath string) (string, error) {
 	defer func() { _ = file.Close() }()
 
 	content, err := io.ReadAll(file)
+	if err != nil {
+		return "", err
+	}
+
+	return string(content), nil
+}
+
+// fetchURL fetches content from an HTTP or HTTPS URL
+func fetchURL(url string) (string, error) {
+	// Create HTTP client with reasonable timeout and TLS config for tests
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true, // For test servers with self-signed certs
+			},
+		},
+	}
+
+	resp, err := client.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
+	}
+
+	content, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
