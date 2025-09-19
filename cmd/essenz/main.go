@@ -13,10 +13,14 @@ import (
 
 	"github.com/essenz/essenz/internal/browser"
 	"github.com/essenz/essenz/internal/daemon"
+	"github.com/essenz/essenz/internal/extractor"
 	"github.com/spf13/cobra"
 )
 
 var version = "0.1.0"
+
+// Command line flags
+var readerView bool
 
 var rootCmd = &cobra.Command{
 	Use:   "sz",
@@ -44,27 +48,41 @@ var fetchCmd = &cobra.Command{
 Examples:
   sz fetch https://example.com
   sz fetch http://example.com
-  sz fetch /path/to/file.html`,
+  sz fetch /path/to/file.html
+  sz fetch --reader-view https://example.com`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		target := args[0]
 
+		var content string
+		var err error
+
 		// Check if it looks like a URL (simple heuristic)
 		if strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://") {
-			content, err := fetchURLWithChrome(cmd.Context(), target)
+			content, err = fetchURLWithChrome(cmd.Context(), target)
 			if err != nil {
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error fetching URL: %v\n", err)
 				os.Exit(1)
 			}
-			_, _ = fmt.Fprint(cmd.OutOrStdout(), content)
-			return
+		} else {
+			// Treat as file path
+			content, err = readFile(target)
+			if err != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error reading file: %v\n", err)
+				os.Exit(1)
+			}
 		}
 
-		// Treat as file path
-		content, err := readFile(target)
-		if err != nil {
-			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error reading file: %v\n", err)
-			os.Exit(1)
+		// Apply reader view processing if requested
+		if readerView {
+			ext := extractor.New()
+			markdown, err := ext.ExtractContent(content)
+			if err != nil {
+				// Fallback to raw content on extraction error
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Warning: Reader view extraction failed, showing raw content: %v\n", err)
+			} else {
+				content = markdown
+			}
 		}
 
 		_, _ = fmt.Fprint(cmd.OutOrStdout(), content)
@@ -119,10 +137,15 @@ var daemonStatusCmd = &cobra.Command{
 }
 
 func init() {
+	// Add daemon subcommands
 	daemonCmd.AddCommand(daemonStartCmd)
 	daemonCmd.AddCommand(daemonStopCmd)
 	daemonCmd.AddCommand(daemonStatusCmd)
 
+	// Add flags to fetch command
+	fetchCmd.Flags().BoolVarP(&readerView, "reader-view", "r", false, "Extract main content and convert to clean markdown")
+
+	// Add all commands to root
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(fetchCmd)
 	rootCmd.AddCommand(daemonCmd)
