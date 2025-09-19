@@ -15,6 +15,7 @@ import (
 	"github.com/jewell-lgtm/essenz/internal/daemon"
 	"github.com/jewell-lgtm/essenz/internal/extractor"
 	"github.com/jewell-lgtm/essenz/internal/pageready"
+	"github.com/jewell-lgtm/essenz/internal/tree"
 	"github.com/spf13/cobra"
 )
 
@@ -29,6 +30,12 @@ var waitForFrameworks bool
 var domReadyTimeout string
 var waitForSelector string
 var debugReadiness bool
+
+// Text node tree flags (F2)
+var textNodeTree bool
+var treeFormat string
+var filterNavigation bool
+var preserveAttributes bool
 
 var rootCmd = &cobra.Command{
 	Use:   "sz [URL or file path]",
@@ -77,6 +84,36 @@ Examples:
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error reading file: %v\n", err)
 				os.Exit(1)
 			}
+		}
+
+		// Apply text node tree processing if requested
+		if textNodeTree {
+			treeBuilder := tree.NewTreeBuilder().
+				WithFilterNavigation(filterNavigation).
+				WithPreserveAttributes(preserveAttributes)
+
+			root, err := treeBuilder.BuildTree(cmd.Context(), content)
+			if err != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error building text node tree: %v\n", err)
+				os.Exit(1)
+			}
+
+			// Format output based on tree format flag
+			switch treeFormat {
+			case "json":
+				output, err := treeBuilder.ToJSON(root)
+				if err != nil {
+					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error converting tree to JSON: %v\n", err)
+					os.Exit(1)
+				}
+				content = output
+			default:
+				content = treeBuilder.ToText(root)
+			}
+
+			// Skip reader view processing when text node tree is enabled
+			_, _ = fmt.Fprint(cmd.OutOrStdout(), content)
+			return
 		}
 
 		// Apply reader view processing by default, unless --raw flag is used
@@ -146,6 +183,36 @@ Examples:
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error reading file: %v\n", err)
 				os.Exit(1)
 			}
+		}
+
+		// Apply text node tree processing if requested
+		if textNodeTree {
+			treeBuilder := tree.NewTreeBuilder().
+				WithFilterNavigation(filterNavigation).
+				WithPreserveAttributes(preserveAttributes)
+
+			root, err := treeBuilder.BuildTree(cmd.Context(), content)
+			if err != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error building text node tree: %v\n", err)
+				os.Exit(1)
+			}
+
+			// Format output based on tree format flag
+			switch treeFormat {
+			case "json":
+				output, err := treeBuilder.ToJSON(root)
+				if err != nil {
+					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error converting tree to JSON: %v\n", err)
+					os.Exit(1)
+				}
+				content = output
+			default:
+				content = treeBuilder.ToText(root)
+			}
+
+			// Skip reader view processing when text node tree is enabled
+			_, _ = fmt.Fprint(cmd.OutOrStdout(), content)
+			return
 		}
 
 		// Apply reader view processing if requested
@@ -224,12 +291,24 @@ func init() {
 	rootCmd.Flags().StringVar(&waitForSelector, "wait-for-selector", "", "Wait for specific CSS selector to appear before extraction")
 	rootCmd.Flags().BoolVar(&debugReadiness, "debug-readiness", false, "Show detailed DOM readiness detection information")
 
+	// Text node tree flags
+	rootCmd.Flags().BoolVar(&textNodeTree, "text-node-tree", false, "Build hierarchical text node tree structure")
+	rootCmd.Flags().StringVar(&treeFormat, "tree-format", "text", "Output format for text node tree (text, json)")
+	rootCmd.Flags().BoolVar(&filterNavigation, "filter-navigation", false, "Filter out navigation elements from tree")
+	rootCmd.Flags().BoolVar(&preserveAttributes, "preserve-attributes", false, "Preserve element attributes in tree structure")
+
 	// Add flags to fetch command
 	fetchCmd.Flags().BoolVarP(&readerView, "reader-view", "r", false, "Extract main content and convert to clean markdown")
 	fetchCmd.Flags().BoolVar(&waitForFrameworks, "wait-for-frameworks", false, "Enable framework-specific readiness detection (React, Vue, Next.js)")
 	fetchCmd.Flags().StringVar(&domReadyTimeout, "dom-ready-timeout", "5s", "Timeout for DOM readiness detection")
 	fetchCmd.Flags().StringVar(&waitForSelector, "wait-for-selector", "", "Wait for specific CSS selector to appear before extraction")
 	fetchCmd.Flags().BoolVar(&debugReadiness, "debug-readiness", false, "Show detailed DOM readiness detection information")
+
+	// Text node tree flags for fetch command
+	fetchCmd.Flags().BoolVar(&textNodeTree, "text-node-tree", false, "Build hierarchical text node tree structure")
+	fetchCmd.Flags().StringVar(&treeFormat, "tree-format", "text", "Output format for text node tree (text, json)")
+	fetchCmd.Flags().BoolVar(&filterNavigation, "filter-navigation", false, "Filter out navigation elements from tree")
+	fetchCmd.Flags().BoolVar(&preserveAttributes, "preserve-attributes", false, "Preserve element attributes in tree structure")
 
 	// Add all commands to root
 	rootCmd.AddCommand(versionCmd)
@@ -255,8 +334,8 @@ func readFile(filepath string) (string, error) {
 
 // shouldUseChromeForFile determines if file processing should use Chrome
 func shouldUseChromeForFile() bool {
-	// Use Chrome for files if any DOM ready flags are set
-	return waitForFrameworks || domReadyTimeout != "5s" || waitForSelector != "" || debugReadiness
+	// Use Chrome for files if any DOM ready flags or text node tree flags are set
+	return waitForFrameworks || domReadyTimeout != "5s" || waitForSelector != "" || debugReadiness || textNodeTree
 }
 
 // createReadinessChecker creates a ReadinessChecker based on CLI flags
