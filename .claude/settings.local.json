@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make test:*)",
+      "Bash(go get:*)",
+      "Bash(make fmt:*)",
+      "Bash(go install:*)",
+      "Bash(make:*)",
+      "Bash(~/go/bin/golangci-lint run)",
+      "Bash(go env:*)",
+      "Read(//Users/mattjewell/.asdf/installs/golang/1.23.3/packages/**)",
+      "Bash(/Users/mattjewell/.asdf/installs/golang/1.23.3/packages/bin/golangci-lint run)",
+      "Bash(go build:*)",
+      "Bash(./sz version)",
+      "Bash(./sz help)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(asdf:*)",
+      "Bash(pre-commit run:*)",
+      "Bash(pre-commit:*)",
+      "Bash(git reset:*)",
+      "Bash(SKIP=go-test git commit -m \"feat: add executable specs for fetch command\n\nAdd comprehensive test specifications for sz fetch command covering:\n- Local file reading with path validation\n- HTTP and HTTPS URL fetching  \n- Error handling for missing files and invalid URLs\n- Help text validation\n\nTests define expected behavior before implementation (TDD approach).\nSupports both file paths and URLs as requested.\nTests currently fail as expected - fetch command not yet implemented.\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\")",
+      "Bash(go run:*)",
+      "Bash(SKIP=go-test git commit -m \"feat: add basic fetch command structure\n\nAdd fetch command to cobra CLI with:\n- Proper usage documentation and examples\n- Argument validation (exactly 1 argument required)\n- Help text showing support for URLs and file paths\n- Placeholder implementation for next development step\n\nCommand now appears in help and accepts --help flag.\nTests now run but fail as expected - actual fetch logic needed.\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\")",
+      "Bash(SKIP=go-test git commit -m \"feat: implement local file reading in fetch command\n\nAdd local file reading functionality to fetch command:\n- Simple URL detection (http/https prefix check)\n- File reading with proper error handling and defer close\n- Content output to stdout, errors to stderr  \n- Exit with code 1 on file errors\n\nLocal file fetching now works: sz fetch /path/to/file.html\nURL fetching shows placeholder message for next implementation step.\nLocal file test now passes in executable specs.\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\")",
+      "Bash(timeout:*)",
+      "Bash(go test:*)",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)",
+      "Bash(git push:*)",
+      "Bash(git branch:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

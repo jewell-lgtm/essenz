@@ -1,0 +1,1956 @@
+Skip to content <#main>
+
+<https://chatgpt.com/>
+
+<https://chatgpt.com/library>
+
+Profile image
+
+
+    Chat history
+
+<https://chatgpt.com/>
+
+New chat
+⇧
+
+⌘
+
+O
+
+<https://chatgpt.com/>
+
+Search chats
+⌘
+
+K
+
+Library
+ <https://chatgpt.com/library>
+
+Sora
+
+<https://sora.chatgpt.com/?utm_source=chatgpt>
+
+GPTs
+ <https://chatgpt.com/gpts>
+SvelteKit Sensei
+
+<https://chatgpt.com/g/g-saP1qgEfy-sveltekit-sensei>
+Jippity
+
+<https://chatgpt.com/g/g-yArNLAzPZ-jippity>
+Shape Up Guru
+
+<https://chatgpt.com/g/g-lMqsNZmpi-shape-up-guru>
+Vim Transition Assistant
+
+<https://chatgpt.com/g/g-5NBiVFB9h-vim-transition-assistant>
+Lingua Bridge
+
+<https://chatgpt.com/g/g-PXFM110IX-lingua-bridge>
+
+Projects
+New
+
+
+    Chats
+
+CLI web browser design
+
+<https://chatgpt.com/c/68cd2368-649c-8320-a7d9-62a86cfb0f5e>
+Managing multiple repos
+
+<https://chatgpt.com/c/68cc3023-d50c-832c-981c-3a2a4b840383>
+Check file consistency
+
+<https://chatgpt.com/c/68cbfbd4-f2dc-8324-a818-c5f3fd4f4d8c>
+Git submodules alternatives
+
+<https://chatgpt.com/c/68cafc3a-5e98-8328-a4e3-4d708926f697>
+Docker-compose production use
+
+<https://chatgpt.com/c/68c951b9-a120-8328-ba32-aa5b50507207>
+Workflow orchestration tools
+
+<https://chatgpt.com/c/68c945a9-3770-832e-9df8-fd7a11deaa64>
+Du command in zsh
+
+<https://chatgpt.com/c/68c7fa10-2dd4-832e-9ee5-deeeb85948cd>
+Workflow tools comparison
+
+<https://chatgpt.com/c/68c7e5ba-4b50-8332-9c26-18eab1fe0316>
+Name ideas for BDD framework
+
+<https://chatgpt.com/c/68c6e207-a224-8320-8df0-af94cc6251bb>
+Cooking perfect rice
+
+<https://chatgpt.com/c/68c6c5dc-ef30-832b-88fe-85b60a4999ed>
+Google Assistant n8n integration
+
+<https://chatgpt.com/c/68c6c445-94fc-8324-98c5-e69442c581a2>
+Mac mini as PaaS
+
+<https://chatgpt.com/c/68c6af6d-59c0-8333-9e97-8d7b7882e4c1>
+Passwordless SSH setup
+
+<https://chatgpt.com/c/68c53f77-8754-8329-a4e9-b7bbf59eaebd>
+Set up Jellyfin via SSH
+
+<https://chatgpt.com/c/68c5392a-25d4-832f-89c7-f1e543aaf6a9>
+PostHog AutoCapture solution
+
+<https://chatgpt.com/c/68c41f24-f424-8327-8b8d-37163092e66b>
+Code review improvement
+
+<https://chatgpt.com/c/68c3ed3c-d678-8324-9158-311d3dcf21ac>
+Custom Claude command
+
+<https://chatgpt.com/c/68c3da34-9254-832f-bbc6-9523bf178c07>
+Temporal API protobuf dependency
+
+<https://chatgpt.com/c/68c1a444-7384-832b-9b22-fccf2078c770>
+DVC for Python startups
+
+<https://chatgpt.com/c/68c13679-1b04-832a-acea-bfcfdad7df39>
+Therapy for ADD help
+
+<https://chatgpt.com/c/68bff6e0-bc0c-8328-88a0-fc9d4c27c222>
+Dockerfile FastAPI Railway
+
+<https://chatgpt.com/c/68bda40c-b3d8-8329-8105-691279666313>
+Optimized CLAUDE.md version
+
+<https://chatgpt.com/c/68bbe726-4960-832b-b815-a4f05cfc6dc3>
+Delete all branches command
+
+<https://chatgpt.com/c/68b930f4-16e8-8325-8482-4e6029c2ea04>
+Fix Storybook $app/state
+
+<https://chatgpt.com/c/68b92981-b4ac-8320-986b-031094c07f45>
+Mic placement and replication
+
+<https://chatgpt.com/c/68b81d1b-162c-8329-a63c-a51761abce05>
+Fix function request
+
+<https://chatgpt.com/c/68b6b9fc-ed44-832c-9655-3917d820cfc3>
+SIM and device PIN recovery
+
+<https://chatgpt.com/c/68b42863-8b00-8332-b7aa-5b78de0e2075>
+Calling superform in Storybook
+
+<https://chatgpt.com/c/68adc2e0-8800-8326-a4a8-8beb7cc8e375>
+
+Profile image
+Matthew Jewell
+Free
+Upgrade
+
+Open sidebar
+
+ChatGPT
+
+<https://chatgpt.com/>
+ChatGPT
+
+This is a copy of a conversation between ChatGPT & Anonymous.
+
+Report conversation
+
+
+          You said:
+
+I was thinking about making a CLI web browser. The idea is to reorder the text, so it is arranged in importance order, rather than the order it is in the source code. How might I go about the initial grok of the html, and deciding how to reorder the text nodes to make a markdown version of the page 
+
+
+            ChatGPT said:
+
+That’s a very cool idea — essentially building a *semantic-first CLI
+browser* that flattens a web page into a linear Markdown-like document,
+with the /most important content first/, stripping away clutter like
+navbars, ads, and sidebars.
+
+Let’s break down the challenge and how you might approach it:
+
+------------------------------------------------------------------------
+
+
+    🧠 Step 1 — Parsing and Building a Semantic Model
+
+Goal: Grok the HTML structure and build an internal content model you
+can analyze.
+
+*How:*
+
+  *
+
+    Use an HTML parser (e.g. |BeautifulSoup| in Python, |parse5| or |
+    jsdom| in Node, |goquery| in Go, etc.).
+
+  *
+
+    Extract all text nodes with their enclosing elements and build a DOM
+    tree.
+
+*Record metadata* for each text node:
+
+  *
+
+    Tag name (h1, p, li, etc.)
+
+  *
+
+    Position in the DOM
+
+  *
+
+    Attributes (role, aria, class/id names)
+
+  *
+
+    Size (number of characters, children count)
+
+  *
+
+    Visual hierarchy hints (|<header>|, |<main>|, |<footer>|, |<aside>|)
+
+This gives you a structured representation of all textual content.
+
+------------------------------------------------------------------------
+
+
+    🧠 Step 2 — Scoring Importance
+
+Goal: Assign a "content importance" score to each block of text.
+
+Think of this like a mini search engine’s "boilerplate removal" problem
+(like Readability
+
+or Goose
+
+).
+
+*Features to consider for importance scoring:*
+
+  *
+
+    *Tag weight:*
+
+      o
+
+        |<title>|, |<h1>| → very high
+
+      o
+
+        |<h2>|, |<h3>| → high
+
+      o
+
+        |<p>|, |<li>| → medium
+
+      o
+
+        |<nav>|, |<aside>|, |<footer>| → low
+
+  *
+
+    *Location in the tree:*
+
+      o
+
+        Large blocks inside |<main>| or |<article>| likely primary content
+
+      o
+
+        Repeated blocks (same class repeated many times across pages)
+        likely boilerplate
+
+  *
+
+    *Text length:*
+
+      o
+
+        Longer coherent text blocks get higher weight than short nav-
+        like items
+
+  *
+
+    *Link density:*
+
+      o
+
+        Blocks with mostly links are usually navigation, not content
+
+  *
+
+    *Semantic roles:*
+
+      o
+
+        |role="main"| or |role="article"| → high
+
+  *
+
+    *Heuristics from readability algorithms:*
+
+      o
+
+        Mozilla’s Readability library has proven heuristics for
+        identifying main content
+
+You can combine these with a simple weighted formula or even train a
+small ML classifier later on.
+
+------------------------------------------------------------------------
+
+
+    🧠 Step 3 — Building the Ordered Markdown
+
+Goal: Output a clean Markdown doc in order of descending importance.
+
+*Process:*
+
+ 1.
+
+    Sort content blocks by importance score.
+
+ 2.
+
+    Convert tags to Markdown syntax:
+
+      *
+
+        |<h1>| → |# Heading|
+
+      *
+
+        |<h2>| → |## Subheading|
+
+      *
+
+        |<p>| → plain paragraph
+
+      *
+
+        |<ul><li>| → |- list item|
+
+      *
+
+        |<a href>| → |[text](url)|
+
+ 3.
+
+    Concatenate blocks into a linear stream of text.
+
+This gives you something like:
+
+md
+
+Copy code
+
+|# Article Title
+
+## Section One
+Some important text content...
+
+## Section Two
+More text content...
+
+* [Source link](https://example.com)
+|
+
+Optionally, you could also:
+
+  *
+
+    Include images with alt text if they’re inside high-scoring content
+    blocks
+
+  *
+
+    Include metadata (author, date, canonical URL)
+
+------------------------------------------------------------------------
+
+
+    🧠 Step 4 — CLI UX
+
+  *
+
+    Input: |cli-browser https://example.com|
+
+  *
+
+    Output: prints Markdown to stdout (pipeable to |less|)
+
+  *
+
+    Add flags like |--top 5| to only show top 5 content blocks.
+
+------------------------------------------------------------------------
+
+
+    ⚡ Tools and Libraries to Look At
+
+  *
+
+    *Readability algorithms:*
+
+      o
+
+        mozilla/readability
+
+        (JS)
+
+      o
+
+        go-readability
+
+        (Go)
+
+      o
+
+        python-readability-lxml
+
+  *
+
+    *HTML parsing:*
+
+      o
+
+        Python: |BeautifulSoup|
+
+      o
+
+        Go: |goquery|
+
+      o
+
+        Node: |jsdom|, |cheerio|
+
+------------------------------------------------------------------------
+
+
+    🧠 Possible Enhancements Later
+
+  *
+
+    Use LLM or summarization to further condense content
+
+  *
+
+    Keep a side-channel of extracted links for exploration
+
+  *
+
+    Add TUI navigation (browse links, go back)
+
+------------------------------------------------------------------------
+
+If you want, I can *sketch out a concrete algorithm* (pseudo-code) for
+the "importance scoring + markdown output" part — the heart of your CLI
+browser.
+
+Would you like me to do that next?
+
+
+          You said:
+
+I think the idea of using an existing "reader mode" sounds good. But I'd like to use some additional heuristics to pull out the "gist" of a page
+
+
+            ChatGPT said:
+
+Perfect — that’s a great instinct.
+
+Using a *reader-mode extractor (like Mozilla Readability)* will get you
+*90% of the way there*: it strips away navigation, ads, and boilerplate,
+leaving the article-like main content.
+
+Then, on top of that, you can layer your own *"gist-finding heuristics"*
+to rearrange and highlight the /key points/ — not just raw text.
+
+------------------------------------------------------------------------
+
+
+    ⚙️ Step 1 — Extract the main content
+
+Use a Readability-like library for your language:
+
+  *
+
+    *Go:* |go-readability|
+
+  *
+
+    *Python:* |readability-lxml|
+
+  *
+
+    *Node/JS:* |mozilla/readability|
+
+This gives you:
+
+  *
+
+    |title|
+
+  *
+
+    |byline|
+
+  *
+
+    |content| (HTML of the main article body)
+
+You can then parse |content| into a DOM fragment.
+
+------------------------------------------------------------------------
+
+
+    ⚙️ Step 2 — Segment content blocks
+
+Split the article content into logical blocks:
+
+  *
+
+    Headings (|h1..h3|)
+
+  *
+
+    Paragraphs
+
+  *
+
+    Lists
+
+  *
+
+    Figures (image + caption)
+
+  *
+
+    Blockquotes
+
+Keep them as a linear sequence of |{tag, text, length, linkDensity,
+headingLevel}| objects.
+
+------------------------------------------------------------------------
+
+
+    ⚙️ Step 3 — Score blocks for "gist" relevance
+
+Here you’re trying to surface *what matters the most*, not just the
+order it appears. Some heuristics:
+
+Heuristic	Signal
+*Heading level*	High weight for |h1|, medium for |h2|, low for |h3+|
+*First paragraph*	Usually an intro → high weight
+*Text length*	Medium length (50–300 words) often the "meat"
+*Position in article*	Early content is often more important
+*Keyword density*	Repeated keywords hint at main topic
+*Highlighty tags*	|<strong>|, |<em>|, |<blockquote>| bump weight
+*Link density*	Too many links = probably nav-like or tangential
+
+A quick weighted formula could be:
+
+text
+
+Copy code
+
+|score = headingBonus + lengthScore + (1 - linkDensity) + positionBonus + highlightBonus
+|
+
+Then sort by score descending.
+
+------------------------------------------------------------------------
+
+
+    ⚙️ Step 4 — Build your Markdown gist
+
+From your scored blocks:
+
+  *
+
+    Output top N blocks
+
+  *
+
+    Convert tags to Markdown (|#|, |##|, |>|, |-|)
+
+  *
+
+    Optionally prepend a short "summary" (first paragraph or generated one)
+
+Example:
+
+md
+
+Copy code
+
+|# How Bees Build Hives
+
+**By Jane Smith**
+
+> Bees are nature's master builders.
+
+## Hive Structure
+Bees construct hexagonal cells from wax...
+
+## Communication
+They use a "waggle dance"...
+|
+
+------------------------------------------------------------------------
+
+
+    ⚙️ Step 5 — Optional: Add light summarization
+
+Once you have extracted blocks, you can:
+
+  *
+
+    Collapse each into 1–2 sentences using a frequency-based keyword
+    summarizer (like |sumy|) or an LLM
+
+  *
+
+    Output a concise bullet list at the top
+
+This would give the user a /TL;DR/ immediately.
+
+------------------------------------------------------------------------
+
+
+    🧠 Architecture sketch
+
+plaintext
+
+Copy code
+
+|HTML → Readability → Main Article HTML
+      → DOM Parser → Content Blocks
+      → Heuristic Scorer → Sorted Blocks
+      → Markdown Formatter → CLI Output
+|
+
+------------------------------------------------------------------------
+
+If you want, I can draft a *concrete scoring algorithm in pseudocode*
+you could drop into your CLI as a first pass.
+
+Would you like me to do that next? (It would make this go from concept
+to something you can build quickly.)
+
+
+          You said:
+
+let's do the whole thing in Go, but instead of writing code write a comprehensive spec. We want to do as much as we can *without* using an LLM, extracting the content as markdown, with some frontmatter type meta info (including navigation links) at the end. The output should be a code block of markdown that I can copy and paste into another tool 
+
+
+            ChatGPT said:
+
+Thought for 6s
+
+markdown
+
+Copy code
+
+|# CLI Semantic Browser — Go Implementation SPEC (no LLM)
+> Comprehensive design spec for a Go-based CLI web browser that extracts page content into **importance-ordered Markdown**, adds light heuristic summarization (no LLM), and appends a frontmatter-style metadata block **at the end** (including navigation / links).
+
+---
+
+## 1. Goals & constraints
+- Produce a single Markdown document (stdout or file) representing a web page, with the most *important* content first.
+- Do **not** use an LLM. All heuristics and summarization must be deterministic, rule- or statistic-based.
+- Use stable Go libraries for HTML parsing and "reader mode" extraction where possible.
+- Output Markdown + a final frontmatter-like metadata block (YAML-style or TOML-like) **at the end** that includes navigation links and meta info.
+- Make the tool pipe-friendly (prints to stdout) and usable inside scripts / pagers.
+
+---
+
+## 2. High-level pipeline
+1. **Fetch** URL (HTTP client with sane defaults).
+2. **Canonicalization & HTML normalization** (fix encodings, remove script/style).
+3. **Reader-mode extraction** (use `go-readability` or fallback heuristics).
+4. **DOM parsing & block segmentation** (use `goquery` to create a sequence of blocks).
+5. **Per-block feature extraction** (tag type, char length, link density, emphasis, position).
+6. **Scoring** each block with a deterministic weighted function.
+7. **Post-process**: merge/split adjacent blocks, deduplicate, deduce headings.
+8. **Optional summarization** of each top block via statistical sentence scoring.
+9. **Convert to Markdown** (headings, lists, links, images).
+10. **Assemble final Markdown** in descending importance order.
+11. **Append frontmatter/meta block** (YAML/TOML) with navigation links and metadata.
+
+---
+
+## 3. Dependencies (recommended)
+- `net/http` (standard) — fetching.
+- `golang.org/x/net/html` — low-level HTML parse (used by goquery).
+- `github.com/PuerkitoBio/goquery` — DOM traversal & selection.
+- `github.com/go-shiori/go-readability` — optional: main-content extraction (article HTML, title, byline). If unavailable, fallback to internal heuristics similar to Readability.
+- `github.com/microcosm-cc/bluemonday` — HTML sanitization (optional).
+- `github.com/russross/blackfriday/v2` or custom converter — but we will implement a small HTML-to-Markdown renderer for the subset we need (headings, p, ul/ol, a, img, blockquote, code) — **avoid heavy dependencies**.
+
+> Note: Prefer minimal third-party libs; `go-readability` is recommended for robust reader mode.
+
+---
+
+## 4. Data models
+```go
+// conceptual definitions (for the spec)
+type Block struct {
+  ID string             // unique id (e.g., DOM path)
+  Tag string            // e.g., "p", "h2", "li", "blockquote", "figure"
+  Text string           // textual content (trimmed)
+  HTML string           // raw inner HTML (sanitized)
+  WordCount int
+  CharCount int
+  LinkCount int
+  LinkDensity float64   // LinkCount / WordCount (or CharCount)
+  EmphasisScore float64 // counts of <strong>/<em>/<b>/<i> normalized
+  HeadingLevel int      // 1..6 or 0 for none
+  Position int          // index within article sequence (0 based)
+  NodeDepth int         // depth in DOM within article fragment
+  RepeatedClassScore float64 // heuristic for template content
+  Score float64         // combined importance score
+  Sentences []string    // tokenized sentences (for summarizer)
+  ExtractedLinks []string
+}
+|
+
+Also:
+
+  *
+
+    |PageMeta| containing Title, Byline, Canonical, URL, PublishedTime,
+    TopNavLinks, AllLinks, CrawlTimestamp, Language (if detected).
+
+------------------------------------------------------------------------
+
+
+    5. Fetching & normalization
+
+  *
+
+    Use |net/http.Client| with:
+
+      o
+
+        Timeout (10s default).
+
+      o
+
+        Follow redirects up to N (e.g., 10).
+
+      o
+
+        Reasonable headers: |User-Agent: cli-browser/0.1 (+https://
+        example)|; accept gzip.
+
+  *
+
+    On fetch:
+
+      o
+
+        Respect |robots.txt|? (config flag; default: ignore for quick
+        dev, configurable).
+
+      o
+
+        Save final URL after redirects.
+
+      o
+
+        Detect content-type; if non-HTML (PDF, image) bail with a
+        helpful message.
+
+  *
+
+    Normalize HTML into UTF-8; strip |<script>|, |<style>|, and hidden
+    nodes (|display:none| from inline style) before analysis.
+
+------------------------------------------------------------------------
+
+
+    6. Reader-mode extraction
+
+  *
+
+    Preferred: call |go-readability|'s |Parse(url, body)| → returns
+    title, byline, content (fragment HTML) and main image, length.
+
+  *
+
+    Fallback: implement a lightweight Readability-like heuristic:
+
+      o
+
+        Score element blocks by tag and text length, penalize high link
+        density, boost |<article>| / |role="main"|, aggregate the best
+        subtree.
+
+  *
+
+    The output of this stage should be a compact HTML fragment
+    representing the /article/ or main content. If |readability| fails,
+    the tool should still continue using full-page DOM, but with heavier
+    penalties for header/footer/aside.
+
+------------------------------------------------------------------------
+
+
+    7. Block segmentation
+
+  *
+
+    Parse the article fragment into a linear sequence of blocks via DOM
+    traversal:
+
+      o
+
+        Treat |h1..h4|, |p|, |li|, |blockquote|, |figure|, |pre|, |
+        table| as block candidates.
+
+      o
+
+        Flatten nested inline tags.
+
+      o
+
+        Keep order /as found/ for segmentation but do not commit to
+        final order yet.
+
+  *
+
+    For each block:
+
+      o
+
+        Compute |WordCount|, |CharCount|, |LinkCount| and |LinkDensity|.
+
+      o
+
+        Compute |HeadingLevel| from tag.
+
+      o
+
+        Extract sentences (simple rule: split on |.?!| plus guard
+        against numeric decimals).
+
+      o
+
+        Count emphasis tags (|strong|, |b|, |em|, |i|).
+
+      o
+
+        Capture images & alt text when present; treat |figure| captions
+        as high-value.
+
+------------------------------------------------------------------------
+
+
+    8. Feature engineering (per block)
+
+Compute features used by scoring:
+
+  *
+
+    |tagWeight|:
+
+      o
+
+        title / h1 → 3.0
+
+      o
+
+        h2 → 2.0
+
+      o
+
+        h3 → 1.2
+
+      o
+
+        p, li → 1.0
+
+      o
+
+        blockquote → 1.4
+
+      o
+
+        pre/code → 1.5
+
+      o
+
+        small/aside/nav/footer → 0.2
+
+  *
+
+    |lengthScore|:
+
+      o
+
+        Use a smooth function: |lengthScore = tanh( log(wordCount + 1) /
+        C )| where |C| tuned to make 0..1 range; or piecewise:
+
+          +
+
+            0-10 words → 0.1
+
+          +
+
+            10-50 → 0.6
+
+          +
+
+            50-400 → 1.0 (sweet spot)
+
+          +
+
+                400 → 0.9 (long but still good)
+
+  *
+
+    |positionBonus|:
+
+      o
+
+        Early blocks get slight boost: |positionBonus = 1 - (position /
+        totalBlocks) * posFactor| (posFactor ~0.5)
+
+  *
+
+    |linkPenalty|:
+
+      o
+
+        |linkPenalty = clamp(linkDensity * 2, 0, 1)| subtract from score
+
+  *
+
+    |emphasisBonus|:
+
+      o
+
+        |emphasisBonus = min(0.5, emphasisCount * 0.1)|
+
+  *
+
+    |repeatedClassPenalty|:
+
+      o
+
+        If block class appears many times in page and has small text →
+        likely boilerplate; compute |repeatedClassScore| as |1 /
+        occurrences| and boost small values into penalty.
+
+  *
+
+    |nodeDepthBonus|:
+
+      o
+
+        Shallow nodes under |<article>| get boost; very deep nodes
+        penalized slightly.
+
+Combine into final score:
+
+ini
+
+Copy code
+
+|score_raw = tagWeight * (0.6*lengthScore + 0.3*emphasisBonus + 0.1*headingBonus)
+score = score_raw * (1 + positionBonus) * (1 - linkPenalty) * repeatedClassScoreAdjustment
+|
+
+Tuning: Provide default weights in config file and expose as CLI flags
+for experimentation.
+
+------------------------------------------------------------------------
+
+
+    9. Deduplication & merging heuristic
+
+  *
+
+    Merge adjacent |<p>| blocks if there is no heading between them and
+    combined text remains coherent (e.g., no list / figure).
+
+  *
+
+    Detect duplicated text (near exact match) and keep the longest
+    occurrence with highest score.
+
+  *
+
+    Collapse short nav-like lists (many |a| links with low words) into a
+    single summarized link list rather than including all as main content.
+
+------------------------------------------------------------------------
+
+
+    10. Summarizer (statistical, per-block)
+
+Goal: produce short (1–3 sentence) gist for each top block w/o LLM.
+
+Method (Sentence Ranking):
+
+ 1.
+
+    Tokenize sentences in the block.
+
+ 2.
+
+    Build frequency map of words in the block after stopword removal and
+    stemming (porter stemmer optional).
+
+ 3.
+
+    Score each sentence: sum of word frequencies normalized by sentence
+    length + boost for sentences containing heading words.
+
+ 4.
+
+    Optionally penalize sentences with too many links.
+
+ 5.
+
+    Pick top N sentences (1–2) as the sentence-summary for the block.
+
+ 6.
+
+    For the overall page TL;DR, choose either:
+
+      *
+
+        First paragraph (if long and high-scoring), or
+
+      *
+
+        Aggregate the top sentence from top K blocks (K configurable),
+        dedupe overlapping content.
+
+Stopword list: include a compact English stoplist. For multi-language
+support, detect |lang| attribute or use simple heuristics and select
+appropriate stoplist.
+
+------------------------------------------------------------------------
+
+
+    11. Markdown conversion rules
+
+  *
+
+    Headings:
+
+      o
+
+        |<h1>| → |# |, |<h2>| → |## |, etc.
+
+      o
+
+        If a heading appears as a high-score block, promote it to top of
+        doc (per scoring).
+
+  *
+
+    Paragraphs: plain text separated by blank line.
+
+  *
+
+    Lists:
+
+      o
+
+        |<ul><li>| → |- item|
+
+      o
+
+        |<ol><li>| → |1. item| (or keep |-| for simplicity)
+
+  *
+
+    Links:
+
+      o
+
+        Inline convert: |[text](url)|; if link text equals URL, present
+        as |<url>| optionally.
+
+      o
+
+        If link target is internal (same host), still include absolute URL.
+
+  *
+
+    Images:
+
+      o
+
+        If block is image with alt and block scored high → |![alt text]
+        (image_url)|; otherwise list images in metadata.
+
+  *
+
+    Blockquotes: |> quoted text|
+
+  *
+
+    Code/Pre: fenced code block with language if present (best-effort).
+
+  *
+
+    Inline emphasis preserved with |**bold**|, |_italic_|.
+
+  *
+
+    Sentences chosen by summarizer can be wrapped in italics or prefixed
+    with |> TL;DR:| optionally (config flag).
+
+------------------------------------------------------------------------
+
+
+    12. Final document assembly (ordering)
+
+  *
+
+    Sort blocks by |Score| descending.
+
+  *
+
+    Option: keep top K blocks (config |--top-k| default 20); optionally
+    include all in original order after top-K as "Full article" section.
+
+  *
+
+    Suggested output structure:
+
+     1.
+
+        Optional auto-generated Title (highest scoring |h1|/title)
+
+     2.
+
+        Optional TL;DR paragraph (aggregated)
+
+     3.
+
+        Ranked Blocks (title + 1–2 sentence summary if |--summarize|
+        enabled, then full block text or truncated to |--max-chars-per-
+        block|)
+
+     4.
+
+        Separator |---|
+
+     5.
+
+        Full article (original reader-mode content) — optional flag |--
+        full| to include
+
+     6.
+
+        |---|
+
+     7.
+
+        *Frontmatter / Metadata block* (YAML-like) at *end* (see section 13)
+
+Note: The user's requirement: put frontmatter meta info including
+navigation links *at the end*.
+
+------------------------------------------------------------------------
+
+
+    13. Frontmatter / metadata block (at end)
+
+  *
+
+    Use YAML or TOML-like block. Example YAML keys:
+
+yaml
+
+Copy code
+
+|---
+url: "https://example.com/article"
+canonical: "https://example.com/article"
+title: "Article Title"
+byline: "Author Name"
+published: "2024-12-01T08:30:00Z"   # if available, ISO8601
+fetched_at: "2025-09-19T11:02:00+02:00"
+lang: "en"
+top_nav_links:                           # navigation / important links (array)
+  - title: "Home"
+    url: "https://example.com"
+  - title: "Section"
+    url: "https://example.com/section"
+extracted_links:                         # all links the extractor found (short list)
+  - "https://example.com/related-1"
+  - "https://external.site/resource"
+images:
+  - url: "https://example.com/hero.jpg"
+    alt: "Hero image"
+content_stats:
+  blocks_total: 42
+  blocks_output: 10
+  words_total: 1500
+source_host: "example.com"
+readability_score_estimate: 1.23         # optional derived metric
+notes: "extracted with go-readability; summarizer=statistical"
+---
+|
+
+  *
+
+    |top_nav_links| selection heuristic:
+
+      o
+
+        From |<nav>| or header links within the same host.
+
+      o
+
+        Filter by visible text length > 2 and not purely icons.
+
+      o
+
+        Prefer links appearing near top of document or in |header| or |
+        nav| elements.
+
+      o
+
+        Keep up to N (default 10).
+
+  *
+
+    |extracted_links|:
+
+      o
+
+        De-duplicated list of high-salience links (links appearing
+        inside top blocks or images).
+
+      o
+
+        Optionally include |link_text| and |link_context| if helpful.
+
+------------------------------------------------------------------------
+
+
+    14. CLI design & flags
+
+php
+
+Copy code
+
+|Usage: gobrowse [flags] <url>
+
+Flags:
+  --top-k int            # number of top blocks to output (default 20)
+  --full                 # append the full reader-mode article after ranked blocks
+  --summarize bool       # run the statistical summarizer (default true)
+  --max-block-chars int  # truncate block text to this many chars in ranked view (default 1000)
+  --lang string          # force language (auto-detected if omitted)
+  --timeout time         # HTTP timeout (default 10s)
+  --no-readability       # skip go-readability and use fallback
+  --output file          # write output to file (default stdout)
+  --config file          # config file for weights & stopwords
+  --include-images       # include images inline if available
+  --top-nav N            # number of nav links to include in metadata (default 10)
+  --debug                # emit extra debug info to stderr (features, scores)
+  --robots-check         # respect robots.txt (default false)
+  --user-agent string    # custom UA
+|
+
+------------------------------------------------------------------------
+
+
+    15. Configuration & tuning
+
+  *
+
+    Provide a JSON or YAML config file with scoring weights:
+
+yaml
+
+Copy code
+
+|weights:
+  tag: {h1:3.0, h2:2.0, h3:1.2, p:1.0, blockquote:1.4}
+  length: {short:0.1, medium:1.0, long:0.9}
+  position_factor: 0.5
+  link_penalty_factor: 2.0
+  emphasis_weight: 0.1
+summarizer:
+  sentences_per_block: 1
+  stopwords: "/path/to/stopwords/en.txt"
+|
+
+  *
+
+    Expose an endpoint/CLI flag to dump scoring features for debugging.
+
+------------------------------------------------------------------------
+
+
+    16. Testing strategy
+
+  *
+
+    Unit tests:
+
+      o
+
+        Block segmentation tests on sample HTML fragments (headings,
+        lists, nested blocks).
+
+      o
+
+        Feature extraction tests (link density, emphasis counts).
+
+      o
+
+        Scoring tests: deterministic output for contrived blocks.
+
+      o
+
+        Markdown conversion idempotence tests (round-trip minimal).
+
+  *
+
+    Integration tests:
+
+      o
+
+        Use a set of canonical webpages (news article, blog, product
+        page, forum thread) stored as fixtures (HTML saved locally).
+
+      o
+
+        Verify:
+
+          +
+
+            Top block is article title for article-like pages.
+
+          +
+
+            Navigation links extracted correctly for sites with header nav.
+
+          +
+
+            No nav-only pages accidentally prioritized.
+
+  *
+
+    Performance tests:
+
+      o
+
+        Measure fetch + parse + extract latency for typical pages (aim
+        <500ms CPU + network).
+
+  *
+
+    Fuzz tests:
+
+      o
+
+        Malformed HTML, huge pages, many images, heavy JS-inlined content.
+
+------------------------------------------------------------------------
+
+
+    17. Edge cases & heuristics to handle them
+
+  *
+
+    *Single-page apps (content rendered by JS):*
+
+      o
+
+        Without headless browser, many SPA pages will be empty. Offer
+        |--render-js| switch that calls an external headless renderer
+        (optional) — note: this violates the no-LLM constraint but is
+        allowed as external tool. Mark |--render-js| as opt-in.
+
+  *
+
+    *Multi-article pages (index pages):*
+
+      o
+
+        If |go-readability| produces multiple article-like blocks,
+        produce a TOC and output top N article summaries.
+
+  *
+
+    *Paywalls / truncated content:*
+
+      o
+
+        Detect common paywall markers (|subscribe|, |paywall|) and mark
+        metadata |paywalled: true|.
+
+  *
+
+    *Very short pages (single paragraph):*
+
+      o
+
+        Output as-is; still include links in metadata.
+
+  *
+
+    *Languages other than English:*
+
+      o
+
+        Attempt |lang| detection from |html[lang]| or meta tag; choose
+        stopword set accordingly. If missing, fallback to English stoplist.
+
+  *
+
+    *Duplicate content due to AMP / printer versions:*
+
+      o
+
+        Prefer |canonical| link; if multiple canonical candidates,
+        choose final URL's host priority.
+
+------------------------------------------------------------------------
+
+
+    18. Security & privacy
+
+  *
+
+    Run fetched HTML/processing in-memory; do not execute scripts.
+
+  *
+
+    Sanitize any HTML that might be re-rendered (use |bluemonday|).
+
+  *
+
+    Avoid following untrusted redirects to file:// or unusual schemes.
+
+  *
+
+    Respect user agent and robots.txt options configurable.
+
+  *
+
+    If writing to disk, sanitize file paths.
+
+------------------------------------------------------------------------
+
+
+    19. Observability & debug output
+
+  *
+
+    |--debug| prints JSON lines (to stderr) with:
+
+      o
+
+        Blocks with final score and key features.
+
+      o
+
+        Chosen top nav links.
+
+      o
+
+        Timing metrics for each stage.
+
+  *
+
+    Provide an option |--dump-blocks-json file| to store full block
+    objects for offline analysis.
+
+------------------------------------------------------------------------
+
+
+    20. Example workflow & commands
+
+  *
+
+    Basic:
+
+nginx
+
+Copy code
+
+|gobrowse https://example.com/article > article.md
+|
+
+  *
+
+    Top 10 blocks + summarizer off:
+
+nginx
+
+Copy code
+
+|gobrowse --top-k 10 --summarize=false https://example.com/article > gist.md
+|
+
+  *
+
+    Include full article afterwards:
+
+nginx
+
+Copy code
+
+|gobrowse --full https://example.com/article > output.md
+|
+
+------------------------------------------------------------------------
+
+
+    21. Sample output (toy example)
+
+This is an example of the appearance of the final Markdown output
+(ranked blocks first), followed by the metadata frontmatter at the end
+(as required). Replace with the real extracted content when running the
+tool.
+
+yaml
+
+Copy code
+
+|# How Bees Build Hives
+
+*By Jane Smith — Jan 8, 2025*
+
+> Bees are nature's master builders: they construct hexagonal cells from wax and use a sophisticated communication system to organize foraging.
+
+## Hive Structure
+Bees construct hexagonal cells from wax. Each cell is built to optimize storage and structural stability, allowing the colony to maximize honey and brood space with minimal material.
+
+## Communication
+They use a "waggle dance" — a movement pattern that conveys direction and distance to nectar sources. This dance is precise and encodes both angle relative to the sun and distance.
+
+## Materials & Temperature Control
+Workers secrete wax and actively regulate internal hive temperature. Wax secretion is energetically expensive; therefore hive architecture balances cost and efficiency.
+
+---
+
+*Full article (reader-mode)*
+(If `--full` is set, the full extracted article HTML converted to Markdown appears here in original linear order.)
+
+---
+
+---
+url: "https://example.com/articles/bees"
+canonical: "https://example.com/articles/bees"
+title: "How Bees Build Hives"
+byline: "Jane Smith"
+published: "2025-01-08T07:30:00Z"
+fetched_at: "2025-09-19T11:02:00+02:00"
+lang: "en"
+top_nav_links:
+  - title: "Home"
+    url: "https://example.com"
+  - title: "Science"
+    url: "https://example.com/section/science"
+extracted_links:
+  - "https://example.com/related/waggle-dance"
+  - "https://wikipedia.org/wiki/Apis_mellifera"
+images:
+  - url: "https://example.com/images/beehive-hero.jpg"
+    alt: "Close-up of honeycomb"
+content_stats:
+  blocks_total: 26
+  blocks_output: 6
+  words_total: 1234
+source_host: "example.com"
+readability_note: "extracted with go-readability; fallback=false"
+---
+|
+
+------------------------------------------------------------------------
+
+
+    22. Implementation roadmap & milestones
+
+ 1.
+
+    Project skeleton, CLI parsing, HTTP fetcher, HTML normalization.
+
+ 2.
+
+    Integrate |go-readability| for main content extraction; basic HTML-
+    >block segmentation via |goquery|.
+
+ 3.
+
+    Implement feature extraction & scoring engine with default weights
+    and |--debug| dump.
+
+ 4.
+
+    Implement simple HTML->Markdown converter for core tags.
+
+ 5.
+
+    Implement sentence-ranked summarizer & TL;DR aggregation.
+
+ 6.
+
+    Add frontmatter writer with nav link extraction.
+
+ 7.
+
+    Write unit & integration tests with fixture pages.
+
+ 8.
+
+    Add configuration file support, tuning parameters, and performance
+    profiling.
+
+ 9.
+
+    Optional: |--render-js| integration using headless Chrome (external
+    binary) for SPAs.
+
+------------------------------------------------------------------------
+
+
+    23. Metrics to evaluate success
+
+  *
+
+    Precision: Does the top N blocks contain the article's actual main
+    points? (manual eval on sample set)
+
+  *
+
+    Recall: Do we avoid dropping important paragraphs?
+
+  *
+
+    Clarity: Human raters prefer gist-first ordering vs original ordering.
+
+  *
+
+    Latency: Median runtime for typical news article should be
+    acceptable (<1s excluding network).
+
+  *
+
+    Robustness: Handles diverse sites without panic and produces metadata.
+
+------------------------------------------------------------------------
+
+
+    24. Notes, tradeoffs & future enhancements
+
+  *
+
+    Tradeoffs:
+
+      o
+
+        Deterministic heuristics are faster and predictable but will
+        never match an LLM's semantic understanding.
+
+      o
+
+        Using reader-mode libraries shifts complexity but may not
+        capture non-article pages well.
+
+  *
+
+    Future:
+
+      o
+
+        Add light topic modeling (LDA or vector-based) for cluster-aware
+        ordering (still without LLM).
+
+      o
+
+        Add user feedback loop to tweak weights or pin blocks as
+        important for domain adaptation.
+
+      o
+
+        Export as JSON for programmatic consumption, and Markdown for
+        human reading.
+
+------------------------------------------------------------------------
+
+
+    25. Appendix: Suggested default weight constants (tweakable)
+
+yaml
+
+Copy code
+
+|tagWeights:
+  title: 3.0
+  h1: 3.0
+  h2: 2.0
+  h3: 1.2
+  p: 1.0
+  li: 0.9
+  blockquote: 1.4
+  pre: 1.5
+baseLengthParams:
+  shortThreshold: 10
+  mediumThreshold: 50
+  longThreshold: 400
+positionFactor: 0.5
+linkPenaltyScale: 2.0
+emphasisWeight: 0.1
+repeatedClassPenaltyThreshold: 3
+|
+
+------------------------------------------------------------------------
+
+
+      Done — Copyable Markdown
+
+The entire spec above is in Markdown and is intended to be copy-pasted
+into your planning docs, issues, or another tool. If you'd like, I can now:
+
+  *
+
+    Produce a minimal Go prototype skeleton (file list + short TODOs), or
+
+  *
+
+    Generate concrete pseudocode for the scoring function and summarizer
+    that you can translate into Go.
+
+Which would you prefer next?
+
+
+          You said:
+
+and finally, come up with a cute name and executable (not too long! but also not an acronym) 
+
+
+            ChatGPT said:
+
+Here are some name ideas that fit the vibe — *short, memorable, and a
+little bit playful* — while hinting at what your tool does (distills
+the /essence/ of a web page for the CLI):
+
+------------------------------------------------------------------------
+
+
+      🐝 Name ideas
+
+Name	Vibe	Notes
+*Essence*	sleek, clean	Captures the core of a page. Executable: |essence|
+*Sift*	short, sharp	Implies sifting through clutter. Executable: |sift|
+*Crux*	minimal, punchy	“The crux” = the central point. Executable: |crux|
+*Gistly*	light, friendly	Emphasizes delivering the gist. Executable: |
+gistly|
+*Nectar*	thematic (like bees collecting the best)	Fits the “extracting
+the good part” metaphor. Executable: |nectar|
+*Sapling*	organic, gentle	New growth from the root content. Executable:
+|sap|
+*Quill*	literary, writerly	For turning the web into clean text.
+Executable: |quill|
+
+------------------------------------------------------------------------
+
+
+      ⚡ My top picks
+
+  *
+
+    *|crux|* — extremely short, feels CLI-ish, directly means “the heart
+    of the matter”
+
+  *
+
+    *|sift|* — very short, clear metaphor, and sounds fast
+
+  *
+
+    *|nectar|* — more playful/metaphorical, pairs well with the idea of
+    “bees pulling the good part out of the flower”
+
+------------------------------------------------------------------------
+
+If you want, I can also check which of these are *available as crates/
+homebrew formulae and not widely used as CLI names*, to avoid name
+collisions.
+
+Would you like me to do that?
+
+
+          You said:
+
+can we play on the ß char somehow? something about essence
+
+
+            ChatGPT said:
+
+Ah — *perfect spark* 💡
+
+Playing on *“essence”* and the *German “ß” (Eszett)* is clever — it
+visually evokes “ss” and gives your tool a distinctive look.
+
+Here are some *name ideas around that theme*:
+
+------------------------------------------------------------------------
+
+
+      🅱️ Names playing on “ß” and essence
+
+Name	Pronunciation	Concept	Executable
+*Eszence*	/ˈɛs.sɛns/	Stylized spelling of /essence/ with |ß| hidden
+inside (s+z)	|eszence|
+*Eßence*	/ˈɛs.sɛns/	Looks like /essence/ with ß	|essence| (ascii executable)
+*Essenz*	/ˈɛs.sɛnts/	Actual German word for /essence/	|essenz|
+*Konzentrat*	/kɔn.t͡sɛnˈtʁaːt/	German for /concentrate/, i.e. distilled
+core	|konz|
+*Destillat*	/dɛs.tiˈlaːt/	German for /distillate/, i.e. extracted pure
+part	|desti|
+*Sümmar*	/ˈzʏ.mɑːʁ/ (playful)	Fake-German-ified /summary/	|summar|
+
+------------------------------------------------------------------------
+
+
+      💡 Suggestion
+
+The cleanest balance of:
+
+  *
+
+    short and typeable
+
+  *
+
+    cute/unique
+
+  *
+
+    meaningful
+    …is:
+
+    *|essenz|* — the actual German word for essence, with that sharp |z|
+    hinting at the |ß|.
+
+It feels like a proper CLI name (|essenz https://…|) and subtly winks at
+German while still being pronounceable internationally.
+
+------------------------------------------------------------------------
+
+If you want, I can also give you a *tiny ASCII logo / CLI banner* that
+uses the |ß| character for fun.
+
+Want me to do that?
+
+
+          You said:
+
+yes, I think we should lean in to the ß being the "brand" and the name being essez
+
+
+            ChatGPT said:
+
+Perfect — *|essez|* is an excellent pick ✅
+
+  *
+
+    It looks like /essence/ + /ß/ (because |ss| → |ß| → |esz|)
+
+  *
+
+    It’s short, clean, and CLI-friendly
+
+  *
+
+    It’s memorable and feels a bit mysterious (in a good way)
+
+And visually we can really *lean into |ß| as the brand glyph*, even
+though the executable is spelled |essez| (ASCII-safe).
+
+------------------------------------------------------------------------
+
+
+    🅱️ Branding concept for |essez|
+
+*Name*: |essez|
+*Executable*: |essez|
+*Mascot glyph / logo element*: |ß|
+
+*Pronunciation*: like “essence” or “ess-eh-z” — flexible
+*Tagline*: “Distill the web.” or “The essence of the web, at your terminal.”
+
+------------------------------------------------------------------------
+
+
+    ✍️ CLI banner (ASCII-friendly)
+
+text
+
+Copy code
+
+|   ____  ____  ____  ____  ____
+  | ____|| ___|| ___|| ___||_  _|
+  |  _|  |___ \|___ \|___ \  ||  
+  | |___  ___) |___) |___) | ||  
+  |_____| |____/|____/|____/  \__|
+                 ß
+     the essence of the web
+|
+
+or something minimal:
+
+text
+
+Copy code
+
+|essez  —  distill the web  ß
+|
+
+------------------------------------------------------------------------
+
+
+    🧠 UX vibe
+
+  *
+
+    Input: a URL
+
+  *
+
+    Output: clean Markdown (main content reordered by importance)
+
+  *
+
+    Footer frontmatter with navigation metadata
+
+  *
+
+    Optional |--raw| mode to dump text in DOM order
+
+  *
+
+    Optional |--tree| to see the structure/importance ranking
+
+------------------------------------------------------------------------
+
+If you like, next I can draft a *tiny brand guide* (colors, tone, logo,
+etc.) so it has a distinctive identity while still feeling “Unixy.”
+
+Want me to do that?
+
+
+ChatGPT can make mistakes. Check important info. See Cookie Preferences.
+
