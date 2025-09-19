@@ -63,10 +63,11 @@ Before continuing development, we should answer these key questions to guide our
   - HTTP clients and web scraping?
   - File I/O and data processing?
 
-- [ ] **Feature scope for next iteration?**
-  - Should our next commit add a real feature (like fetching a URL)?
-  - Or focus on improving the development experience (CI/CD, more tooling)?
-  - What's the smallest meaningful feature we could add?
+- [x] **Feature scope for next iteration?** ✅ **DECIDED**
+  - **Next feature**: `sz fetch` command supporting both local files and HTTP(S) URLs
+  - **Scope**: Simple fetch and print content (no processing/parsing yet)
+  - **Approach**: Start with executable specs, then implement incrementally
+  - **Examples**: `sz fetch https://example.com` and `sz fetch /path/to/file.html`
 
 - [ ] **Performance and optimization?**
   - Should we worry about performance from the start?
@@ -75,10 +76,11 @@ Before continuing development, we should answer these key questions to guide our
 
 ## 🤝 Collaboration Questions
 
-- [ ] **How do you prefer to learn/work?**
-  - Do you want to implement features yourself with guidance?
-  - Should I implement things and explain the decisions?
-  - Do you prefer small incremental steps or larger feature additions?
+- [x] **How do you prefer to learn/work?** ✅ **DECIDED**
+  - **Chosen approach**: Small, incremental steps with agent-driven implementation
+  - Agent performs small, atomic pieces of work with granular planning
+  - Human guides direction, answers questions, and tweaks plans before implementation
+  - Focus on one concept/change at a time with lots of commits
 
 - [ ] **What's your comfort level with complexity?**
   - Are you ready for more advanced Go concepts?
