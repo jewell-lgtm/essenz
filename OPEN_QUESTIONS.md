@@ -29,10 +29,11 @@ Before continuing development, we should answer these key questions to guide our
   - **Scope**: Web scraping + content extraction + markdown output (not a full browser)
   - **Focus**: Clean, readable text extraction - no complex browser features needed
 
-- [ ] **What's our target user?**
-  - Developers who want to extract web content to markdown?
-  - CLI enthusiasts learning Go?
-  - People who need readable versions of web articles?
+- [x] **What's our target user?** ✅ **DECIDED**
+  - **Primary**: Developers and technical users who need clean text from web content
+  - **Use cases**: Documentation extraction, content analysis, CLI workflows
+  - **Secondary**: Anyone wanting readable article text without browser clutter
+  - **Focus**: Technical users comfortable with command-line tools
 
 ## 🏗️ Architecture & Design Questions
 
@@ -42,47 +43,53 @@ Before continuing development, we should answer these key questions to guide our
   - **Modules**: `internal/browser/`, `internal/extractor/`, `internal/renderer/`, `internal/daemon/`
   - **Principle**: CLI commands orchestrate, modules do the work
 
-- [ ] **What external dependencies do we want?**
-  - The go.mod mentions chromedp, go-readability, cobra - do we use these?
-  - Should we minimize dependencies to focus on Go fundamentals?
-  - Are we building a "real" tool or a learning exercise?
+- [x] **What external dependencies do we want?** ✅ **DECIDED**
+  - **Essential**: chromedp (Chrome automation), cobra (CLI framework)
+  - **Content extraction**: go-readability or custom implementation
+  - **Approach**: Use proven libraries for complex tasks, implement core logic ourselves
+  - **Goal**: Real tool with educational value - practical dependencies are fine
 
-- [ ] **Configuration approach?**
-  - Should we implement the YAML config mentioned in README?
-  - Environment variables? Command flags only?
-  - How complex should our configuration be?
+- [x] **Configuration approach?** ✅ **DECIDED**
+  - **Primary**: Command flags for most options (simple, transparent)
+  - **Secondary**: Environment variables for defaults (ESSENZ_CHROME_PATH, etc.)
+  - **Config file**: Optional YAML for advanced users (~/.config/essenz/config.yaml)
+  - **Keep simple**: Start with flags, add config file later if needed
 
 ## 🧪 Testing & Quality Questions
 
-- [ ] **Testing strategy depth?**
-  - Are the current unit tests + executable specs sufficient?
-  - Do we need integration tests with real web scraping?
-  - Should we mock external dependencies or test against real sites?
+- [x] **Testing strategy depth?** ✅ **DECIDED**
+  - **Primary**: Executable specs for end-to-end behavior (current approach)
+  - **Unit tests**: For individual modules and complex logic
+  - **Integration**: Test against real sites for core functionality, mocks for edge cases
+  - **Approach**: TDD with failing specs first, comprehensive but not excessive
 
-- [ ] **Error handling patterns?**
-  - What Go error handling patterns should we establish?
-  - How should we handle network failures, parsing errors, etc.?
-  - Should we use structured logging (logrus, zap) or keep it simple?
+- [x] **Error handling patterns?** ✅ **DECIDED**
+  - **Pattern**: Standard Go errors with context (fmt.Errorf with %w wrapping)
+  - **Logging**: Simple log package initially, structured logging (slog) later if needed
+  - **User errors**: Clear, actionable messages to stderr, technical details in debug mode
+  - **Recovery**: Graceful degradation where possible (fallback to HTTP if Chrome fails)
 
 ## 🚀 Development & Deployment Questions
 
-- [ ] **Release strategy?**
-  - Should we set up automated releases with GitHub Actions?
-  - Do we need cross-platform builds (Windows, Linux, macOS)?
-  - Should we publish to package managers (Homebrew, etc.)?
+- [x] **Release strategy?** ✅ **DECIDED**
+  - **Automation**: GitHub Actions for releases and cross-platform builds
+  - **Platforms**: macOS, Linux, Windows (Go makes this easy)
+  - **Distribution**: GitHub releases initially, Homebrew later if tool gains traction
+  - **Versioning**: Semantic versioning with automated changelog
 
-- [ ] **Documentation completeness?**
-  - The README has extensive docs for features we don't have - update or implement?
-  - Should we focus on godoc comments and keep README minimal?
-  - Do we need contributor guidelines beyond what's there?
+- [x] **Documentation completeness?** ✅ **DECIDED**
+  - **README**: Keep aspirational docs, mark unimplemented features clearly
+  - **Code docs**: Comprehensive godoc comments for all public APIs
+  - **Contributing**: Current guidelines are sufficient, expand as project grows
+  - **Approach**: Document as we build, README shows vision and current state
 
 ## 🎓 Learning & Scope Questions
 
-- [ ] **What Go concepts should we prioritize learning?**
-  - Interfaces and composition?
-  - Goroutines and concurrency?
-  - HTTP clients and web scraping?
-  - File I/O and data processing?
+- [x] **What Go concepts should we prioritize learning?** ✅ **DECIDED**
+  - **Phase 1**: Interfaces, composition, error handling (for modular architecture)
+  - **Phase 2**: HTTP clients, context management (for web scraping)
+  - **Phase 3**: Goroutines and concurrency (for daemon and performance)
+  - **Focus**: Learn concepts as needed for current features
 
 - [x] **Feature scope for next iteration?** ✅ **DECIDED**
   - **Next feature**: `sz fetch` command supporting both local files and HTTP(S) URLs
@@ -90,10 +97,11 @@ Before continuing development, we should answer these key questions to guide our
   - **Approach**: Start with executable specs, then implement incrementally
   - **Examples**: `sz fetch https://example.com` and `sz fetch /path/to/file.html`
 
-- [ ] **Performance and optimization?**
-  - Should we worry about performance from the start?
-  - Are there specific Go performance patterns we should learn?
-  - Should we add benchmarking and profiling?
+- [x] **Performance and optimization?** ✅ **DECIDED**
+  - **Approach**: Write correct code first, optimize later based on actual usage
+  - **Monitoring**: Add basic benchmarks for core operations, profile when needed
+  - **Focus areas**: Memory management with Chrome, response time for commands
+  - **Principle**: Premature optimization is root of all evil - measure first
 
 ## 🤝 Collaboration Questions
 
@@ -103,10 +111,11 @@ Before continuing development, we should answer these key questions to guide our
   - Human guides direction, answers questions, and tweaks plans before implementation
   - Focus on one concept/change at a time with lots of commits
 
-- [ ] **What's your comfort level with complexity?**
-  - Are you ready for more advanced Go concepts?
-  - Should we stick to basics for now?
-  - How much external library usage vs. building from scratch?
+- [x] **What's your comfort level with complexity?** ✅ **DECIDED**
+  - **Approach**: Incremental complexity - start simple, add sophistication gradually
+  - **Libraries**: Use proven libraries for complex tasks (chromedp, cobra)
+  - **Learning**: Introduce advanced Go concepts as needed for features
+  - **Balance**: Real-world tool with educational progression
 
 ---
 
