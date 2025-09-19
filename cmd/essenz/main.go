@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -10,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/essenz/essenz/internal/browser"
+	"github.com/essenz/essenz/internal/daemon"
 	"github.com/spf13/cobra"
 )
 
@@ -48,7 +51,7 @@ Examples:
 
 		// Check if it looks like a URL (simple heuristic)
 		if strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://") {
-			content, err := fetchURL(target)
+			content, err := fetchURLWithChrome(cmd.Context(), target)
 			if err != nil {
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error fetching URL: %v\n", err)
 				os.Exit(1)
@@ -68,9 +71,61 @@ Examples:
 	},
 }
 
+var daemonCmd = &cobra.Command{
+	Use:   "daemon",
+	Short: "Manage the Chrome daemon",
+	Long:  `Start, stop, or check the status of the Chrome daemon process.`,
+}
+
+var daemonStartCmd = &cobra.Command{
+	Use:   "start",
+	Short: "Start the Chrome daemon",
+	Run: func(cmd *cobra.Command, _ []string) {
+		server := daemon.NewServer()
+		if err := server.Start(); err != nil {
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error starting daemon: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println("Chrome daemon started")
+
+		// Keep the daemon running
+		select {}
+	},
+}
+
+var daemonStopCmd = &cobra.Command{
+	Use:   "stop",
+	Short: "Stop the Chrome daemon",
+	Run: func(cmd *cobra.Command, _ []string) {
+		client := daemon.NewDaemonClient()
+		if err := client.Shutdown(); err != nil {
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error stopping daemon: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println("Chrome daemon stopped")
+	},
+}
+
+var daemonStatusCmd = &cobra.Command{
+	Use:   "status",
+	Short: "Check daemon status",
+	Run: func(_ *cobra.Command, _ []string) {
+		if daemon.IsDaemonRunning() {
+			fmt.Println("Chrome daemon is running")
+		} else {
+			fmt.Println("Chrome daemon is not running")
+		}
+	},
+}
+
 func init() {
+	daemonCmd.AddCommand(daemonStartCmd)
+	daemonCmd.AddCommand(daemonStopCmd)
+	daemonCmd.AddCommand(daemonStatusCmd)
+
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(fetchCmd)
+	rootCmd.AddCommand(daemonCmd)
 }
 
 // readFile reads the contents of a file and returns it as a string
@@ -89,7 +144,21 @@ func readFile(filepath string) (string, error) {
 	return string(content), nil
 }
 
-// fetchURL fetches content from an HTTP or HTTPS URL
+// fetchURLWithChrome fetches content using Chrome browser automation
+func fetchURLWithChrome(ctx context.Context, url string) (string, error) {
+	client := browser.NewClient()
+	defer client.Shutdown()
+
+	content, err := client.FetchContent(ctx, url)
+	if err != nil {
+		// Fallback to simple HTTP fetch if Chrome fails
+		return fetchURL(url)
+	}
+
+	return content, nil
+}
+
+// fetchURL fetches content from an HTTP or HTTPS URL (fallback method)
 func fetchURL(url string) (string, error) {
 	// Create HTTP client with reasonable timeout and TLS config for tests
 	client := &http.Client{
