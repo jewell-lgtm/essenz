@@ -1,0 +1,29 @@
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - gofmt
+    - goimports
+    - govet
+    - errcheck
+    - staticcheck
+    - unused
+    - ineffassign
+    - misspell
+    - gocyclo
+    - revive
+    - gosimple
+    - typecheck
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+  revive:
+    min-confidence: 0.8
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
