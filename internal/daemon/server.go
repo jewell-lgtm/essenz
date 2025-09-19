@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/chromedp/chromedp"
+	"github.com/jewell-lgtm/essenz/internal/pageready"
 )
 
 // Server manages Chrome processes as a long-running daemon.
@@ -204,16 +205,32 @@ func (s *Server) fetchContentWithContext(ctx context.Context, url string) (strin
 	timeoutCtx, timeoutCancel := context.WithTimeout(ctx, 30*time.Second)
 	defer timeoutCancel()
 
-	// Fetch page content
+	// Use enhanced DOM readiness detection by default
+	checker := pageready.NewReadinessChecker().WithTimeout(5 * time.Second)
+
+	// Fetch page content with DOM readiness
 	var htmlContent string
 	err := chromedp.Run(timeoutCtx,
 		chromedp.Navigate(url),
 		chromedp.WaitReady("body"),
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to navigate to %s: %w", url, err)
+	}
+
+	// Apply DOM readiness detection
+	_, err = checker.WaitForReady(timeoutCtx, timeoutCtx)
+	if err != nil {
+		// DOM readiness failed, but continue with basic content extraction
+		log.Printf("DOM readiness detection failed for %s: %v", url, err)
+	}
+
+	// Extract content after readiness
+	err = chromedp.Run(timeoutCtx,
 		chromedp.OuterHTML("html", &htmlContent),
 	)
-
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch content from %s: %w", url, err)
+		return "", fmt.Errorf("failed to extract content from %s: %w", url, err)
 	}
 
 	return htmlContent, nil

@@ -61,7 +61,18 @@ Examples:
 			}
 		} else {
 			// Treat as file path
-			content, err = readFile(target)
+			// If DOM ready flags are set, process file through Chrome for consistency
+			if shouldUseChromeForFile() {
+				// Convert file path to file:// URL and process through Chrome
+				fileURL := "file://" + target
+				content, err = fetchURLWithChrome(cmd.Context(), fileURL)
+				if err != nil {
+					// Fallback to direct file reading if Chrome fails
+					content, err = readFile(target)
+				}
+			} else {
+				content, err = readFile(target)
+			}
 			if err != nil {
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error reading file: %v\n", err)
 				os.Exit(1)
@@ -119,7 +130,18 @@ Examples:
 			}
 		} else {
 			// Treat as file path
-			content, err = readFile(target)
+			// If DOM ready flags are set, process file through Chrome for consistency
+			if shouldUseChromeForFile() {
+				// Convert file path to file:// URL and process through Chrome
+				fileURL := "file://" + target
+				content, err = fetchURLWithChrome(cmd.Context(), fileURL)
+				if err != nil {
+					// Fallback to direct file reading if Chrome fails
+					content, err = readFile(target)
+				}
+			} else {
+				content, err = readFile(target)
+			}
 			if err != nil {
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error reading file: %v\n", err)
 				os.Exit(1)
@@ -229,6 +251,12 @@ func readFile(filepath string) (string, error) {
 	}
 
 	return string(content), nil
+}
+
+// shouldUseChromeForFile determines if file processing should use Chrome
+func shouldUseChromeForFile() bool {
+	// Use Chrome for files if any DOM ready flags are set
+	return waitForFrameworks || domReadyTimeout != "5s" || waitForSelector != "" || debugReadiness
 }
 
 // createReadinessChecker creates a ReadinessChecker based on CLI flags
