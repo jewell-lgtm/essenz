@@ -48,7 +48,8 @@
       "Bash(env ESSENZ_CHROME_PATH:*)",
       "Bash(/tmp/sz-daemon-final:*)",
       "Bash(pkill:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(SKIP=go-test git commit -m \"feat: add executable spec for default reader view behavior\n\nComprehensive test specification covering new default behavior:\n- sz URL - defaults to reader view with clean markdown output\n- sz file.html - defaults to reader view for local files\n- sz --raw URL - bypasses reader view for raw HTML output\n- sz (no args) - continues to show help information\n- sz fetch URL - maintains backward compatibility (raw HTML)\n- sz fetch --reader-view URL - explicit reader view with fetch\n\nTests define expected behavior where sz becomes a reader view tool by default,\nmaking it more user-friendly for the primary use case of content extraction.\nMaintains full backward compatibility with existing fetch command behavior.\n\nTests currently fail as expected - default reader view not yet implemented.\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\")"
     ],
     "deny": [],
     "ask": []

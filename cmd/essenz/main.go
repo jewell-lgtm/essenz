@@ -21,13 +21,59 @@ var version = "0.1.0"
 
 // Command line flags
 var readerView bool
+var rawOutput bool
 
 var rootCmd = &cobra.Command{
-	Use:   "sz",
+	Use:   "sz [URL or file path]",
 	Short: "Distill the web into semantic markdown",
-	Long:  `sz is a CLI web browser that extracts the essence of web pages, reordering content by importance rather than DOM structure.`,
-	Run: func(cmd *cobra.Command, _ []string) {
-		_ = cmd.Help()
+	Long: `sz is a CLI web browser that extracts the essence of web pages, reordering content by importance rather than DOM structure.
+
+Examples:
+  sz https://example.com         # Extract clean content from URL
+  sz /path/to/article.html       # Extract clean content from local file
+  sz --raw https://example.com   # Get raw HTML without processing
+  sz                             # Show this help`,
+	Args: cobra.MaximumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		// If no arguments, show help
+		if len(args) == 0 {
+			_ = cmd.Help()
+			return
+		}
+
+		target := args[0]
+		var content string
+		var err error
+
+		// Check if it looks like a URL (simple heuristic)
+		if strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://") {
+			content, err = fetchURLWithChrome(cmd.Context(), target)
+			if err != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error fetching URL: %v\n", err)
+				os.Exit(1)
+			}
+		} else {
+			// Treat as file path
+			content, err = readFile(target)
+			if err != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error reading file: %v\n", err)
+				os.Exit(1)
+			}
+		}
+
+		// Apply reader view processing by default, unless --raw flag is used
+		if !rawOutput {
+			ext := extractor.New()
+			markdown, err := ext.ExtractContent(content)
+			if err != nil {
+				// Fallback to raw content on extraction error
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Warning: Reader view extraction failed, showing raw content: %v\n", err)
+			} else {
+				content = markdown
+			}
+		}
+
+		_, _ = fmt.Fprint(cmd.OutOrStdout(), content)
 	},
 }
 
@@ -141,6 +187,9 @@ func init() {
 	daemonCmd.AddCommand(daemonStartCmd)
 	daemonCmd.AddCommand(daemonStopCmd)
 	daemonCmd.AddCommand(daemonStatusCmd)
+
+	// Add flags to root command
+	rootCmd.Flags().BoolVar(&rawOutput, "raw", false, "Output raw HTML without reader view processing")
 
 	// Add flags to fetch command
 	fetchCmd.Flags().BoolVarP(&readerView, "reader-view", "r", false, "Extract main content and convert to clean markdown")
