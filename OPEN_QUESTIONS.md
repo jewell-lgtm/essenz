@@ -2,12 +2,32 @@
 
 Before continuing development, we should answer these key questions to guide our direction and decisions.
 
+## 🔥 Critical Chrome/Browser Management Questions
+
+- [x] **How do we manage the headless Chrome daemon process?** ✅ **DECIDED**
+  - **Approach**: Persistent Chrome daemon process with command connections
+  - **Rationale**: Faster subsequent commands, shared resource pool, better for repeated use
+  - **Implementation**: Long-running Chrome process, sz commands connect as needed
+  - **Lifecycle**: Start daemon on first use, graceful shutdown, crash recovery needed
+
+- [x] **How do we access browser scope inside sz commands?** ✅ **DECIDED**
+  - **Approach**: Browser client that connects to persistent Chrome daemon
+  - **Interface**: Abstract browser interface for CLI commands to use
+  - **Connection**: Commands get browser context via connection manager
+  - **Design**: CLI layer → Browser Manager → Chrome Daemon connection
+
+- [x] **How do we prevent memory leaks with Chrome automation?** ✅ **DECIDED**
+  - **Strategy**: Strict resource cleanup per command with timeout enforcement
+  - **Approach**: Each command gets fresh browser context, cleaned up after use
+  - **Implementation**: Context pooling with automatic cleanup, page limits, periodic GC
+  - **Safeguards**: Command timeouts, memory monitoring, daemon restart if needed
+
 ## 🎯 Core Product Questions
 
-- [ ] **What should `sz` actually do?**
-  - Should we implement the web scraping/markdown conversion described in the README?
-  - Or keep it as a simple toy app and add different features?
-  - What's the minimum viable functionality for our first real feature?
+- [x] **What should `sz` actually do?** ✅ **DECIDED**
+  - **Core value**: Provide human readable text versions of web pages from the command line
+  - **Scope**: Web scraping + content extraction + markdown output (not a full browser)
+  - **Focus**: Clean, readable text extraction - no complex browser features needed
 
 - [ ] **What's our target user?**
   - Developers who want to extract web content to markdown?
@@ -16,10 +36,11 @@ Before continuing development, we should answer these key questions to guide our
 
 ## 🏗️ Architecture & Design Questions
 
-- [ ] **Project structure - how should we organize the code?**
-  - Should we follow the layout described in README (`internal/browser/`, `internal/extractor/`, etc.)?
-  - Or start simpler with just `cmd/` and `pkg/`?
-  - Do we need the full proposed architecture for a learning project?
+- [x] **Project structure - how should we organize the code?** ✅ **DECIDED**
+  - **Approach**: Standard Go layout with thin CLI layer deferring to internal modules
+  - **Structure**: `cmd/` (thin CLI) + `internal/` (business logic) + `pkg/` (public APIs)
+  - **Modules**: `internal/browser/`, `internal/extractor/`, `internal/renderer/`, `internal/daemon/`
+  - **Principle**: CLI commands orchestrate, modules do the work
 
 - [ ] **What external dependencies do we want?**
   - The go.mod mentions chromedp, go-readability, cobra - do we use these?

@@ -42,22 +42,38 @@ This is an early-stage project with basic CLI structure in place:
 
 ## Project Structure
 
+**Architecture Principle**: Thin CLI layer orchestrating modular internal packages
+
 ```
 essenz/
-├── cmd/essenz/           # CLI entry point (main.go)
+├── cmd/essenz/           # CLI entry point (thin orchestration layer)
+│   └── main.go          # Cobra commands that delegate to internal modules
+├── internal/            # Business logic modules (not importable externally)
+│   ├── browser/         # Chrome daemon management and browser operations
+│   ├── daemon/          # Chrome process lifecycle and connection management
+│   ├── extractor/       # Content extraction and semantic analysis
+│   ├── renderer/        # Markdown/text output formatting
+│   └── config/          # Configuration management
+├── pkg/                 # Public APIs (importable by other projects)
+│   └── essenz/          # Core types and interfaces
 ├── specs/               # Executable specifications (TDD tests)
 │   ├── cli_spec_test.go
 │   └── fetch_spec_test.go
-├── internal/            # Internal packages (future)
-│   ├── browser/         # Chrome integration (planned)
-│   ├── extractor/       # Content extraction (planned)
-│   ├── renderer/        # Markdown rendering (planned)
-│   └── tui/            # Terminal UI (planned)
 ├── .tool-versions       # asdf tool versions
 ├── Makefile            # Build automation
 ├── go.mod              # Go module definition
 └── README.md           # Documentation
 ```
+
+### Module Responsibilities
+
+- **`cmd/essenz`**: Argument parsing, command routing, minimal business logic
+- **`internal/browser`**: Browser context management, page operations
+- **`internal/daemon`**: Chrome process lifecycle, connection pooling
+- **`internal/extractor`**: Content analysis, text extraction, importance scoring
+- **`internal/renderer`**: Output formatting (markdown, JSON, text)
+- **`internal/config`**: Configuration loading and validation
+- **`pkg/essenz`**: Public types, interfaces for external integrations
 
 ## Development Commands
 
