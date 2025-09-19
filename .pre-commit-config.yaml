@@ -1,0 +1,46 @@
+repos:
+  - repo: local
+    hooks:
+      - id: go-fmt
+        name: go-fmt
+        entry: gofmt
+        language: system
+        files: \.go$
+        args: [-w, -s]
+
+      - id: go-imports
+        name: go-imports
+        entry: goimports
+        language: system
+        files: \.go$
+        args: [-w]
+
+      - id: go-vet
+        name: go-vet
+        entry: go
+        language: system
+        files: \.go$
+        args: [vet, ./...]
+        pass_filenames: false
+
+      - id: go-test
+        name: go-test
+        entry: go
+        language: system
+        files: \.go$
+        args: [test, ./...]
+        pass_filenames: false
+
+      - id: golangci-lint
+        name: golangci-lint
+        entry: golangci-lint
+        language: system
+        files: \.go$
+        args: [run]
+        pass_filenames: false
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.4.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]

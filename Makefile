@@ -1,4 +1,4 @@
-.PHONY: build test lint fmt vet clean install help check-tools
+.PHONY: build test lint fmt vet clean install help check-tools setup-pre-commit
 
 # Check tool versions
 check-tools:
@@ -38,19 +38,25 @@ clean:
 install:
 	go install ./cmd/essenz
 
+# Setup pre-commit hooks
+setup-pre-commit:
+	pre-commit install
+	pre-commit install --hook-type commit-msg
+
 # Run all checks
 check: check-tools fmt vet lint test
 
 # Show help
 help:
 	@echo "Available targets:"
-	@echo "  check-tools - Check tool versions against .tool-versions"
-	@echo "  build       - Build the sz binary"
-	@echo "  test        - Run tests"
-	@echo "  lint        - Run golangci-lint"
-	@echo "  fmt         - Format code with gofmt and goimports"
-	@echo "  vet         - Run go vet"
-	@echo "  clean       - Clean build artifacts"
-	@echo "  install     - Install binary locally"
-	@echo "  check       - Run all checks (tools, fmt, vet, lint, test)"
-	@echo "  help        - Show this help message"
+	@echo "  setup-pre-commit - Install pre-commit hooks"
+	@echo "  check-tools      - Check tool versions against .tool-versions"
+	@echo "  build            - Build the sz binary"
+	@echo "  test             - Run tests"
+	@echo "  lint             - Run golangci-lint"
+	@echo "  fmt              - Format code with gofmt and goimports"
+	@echo "  vet              - Run go vet"
+	@echo "  clean            - Clean build artifacts"
+	@echo "  install          - Install binary locally"
+	@echo "  check            - Run all checks (tools, fmt, vet, lint, test)"
+	@echo "  help             - Show this help message"
