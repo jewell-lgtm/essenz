@@ -28,8 +28,25 @@ var versionCmd = &cobra.Command{
 	},
 }
 
+var fetchCmd = &cobra.Command{
+	Use:   "fetch [URL or file path]",
+	Short: "Fetch content from a URL or local file",
+	Long: `Fetch content from an HTTP(S) URL or read from a local file.
+
+Examples:
+  sz fetch https://example.com
+  sz fetch http://example.com
+  sz fetch /path/to/file.html`,
+	Args: cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		// TODO: Implement fetch functionality
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Fetch command called with: %s\n", args[0])
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(fetchCmd)
 }
 
 func main() {
