@@ -29,15 +29,15 @@ func NewMediaMarkdownGenerator(config GeneratorConfig) *MediaMarkdownGenerator {
 // GenerateMarkdown generates markdown text for a media replacement.
 func (mg *MediaMarkdownGenerator) GenerateMarkdown(replacement MediaReplacement) string {
 	switch replacement.Type {
-	case IMAGE:
+	case Image:
 		return mg.generateImageMarkdown(replacement)
-	case VIDEO:
+	case Video:
 		return mg.generateVideoMarkdown(replacement)
-	case AUDIO:
+	case Audio:
 		return mg.generateAudioMarkdown(replacement)
-	case SOCIAL_EMBED:
+	case SocialEmbed:
 		return mg.generateSocialMarkdown(replacement)
-	case INTERACTIVE:
+	case Interactive:
 		return mg.generateInteractiveMarkdown(replacement)
 	default:
 		return mg.generateDefaultMarkdown(replacement)

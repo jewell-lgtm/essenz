@@ -18,6 +18,7 @@ import (
 	"github.com/jewell-lgtm/essenz/internal/markdown"
 	"github.com/jewell-lgtm/essenz/internal/media"
 	"github.com/jewell-lgtm/essenz/internal/pageready"
+	"github.com/jewell-lgtm/essenz/internal/summarizer"
 	"github.com/jewell-lgtm/essenz/internal/tree"
 	"github.com/spf13/cobra"
 )
@@ -33,6 +34,7 @@ var waitForFrameworks bool
 var domReadyTimeout string
 var waitForSelector string
 var debugReadiness bool
+var noLCPWait bool
 
 // Text node tree flags (F2)
 var textNodeTree bool
@@ -53,6 +55,13 @@ var includeDecorative bool
 var markdownRenderer bool
 var emphasisStyle string
 var listStyle string
+
+// TL;DR summarizer flags (F6)
+var tldrAPIKey string
+var tldrModel string
+var tldrSummaryLength string
+var tldrBaseURL string
+var tldrTimeout string
 var rootCmd = &cobra.Command{
 	Use:   "sz [URL or file path]",
 	Short: "Distill the web into semantic markdown",
@@ -515,6 +524,65 @@ Examples:
 	},
 }
 
+var tldrCmd = &cobra.Command{
+	Use:   "tldr [URL or file path]",
+	Short: "Generate AI-powered summary of article content",
+	Long: `Generate a concise TL;DR summary of article content using AI.
+
+This command uses the complete F1-F5 content extraction pipeline and then
+applies AI summarization to produce a concise summary of the main points.
+
+Examples:
+  sz tldr https://example.com/article
+  sz tldr --summary-length short https://news.site/story
+  sz tldr --model gpt-4 https://blog.com/post
+  sz tldr /path/to/article.html`,
+	Args: cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		target := args[0]
+
+		// Use F1-F5 pipeline to extract and clean content
+		content, err := extractContentWithPipeline(cmd.Context(), target)
+		if err != nil {
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error extracting content: %v\n", err)
+			os.Exit(1)
+		}
+
+		// Parse summary length
+		summaryLength, err := summarizer.ParseSummaryLength(tldrSummaryLength)
+		if err != nil {
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error parsing summary length: %v\n", err)
+			os.Exit(1)
+		}
+
+		// Create summarizer config from flags
+		config := summarizer.ConfigFromFlags(tldrAPIKey, tldrModel, tldrBaseURL, tldrTimeout)
+
+		// Create summarizer
+		sum, err := summarizer.New(summarizer.OpenAIProvider, config)
+		if err != nil {
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error creating summarizer: %v\n", err)
+			os.Exit(1)
+		}
+
+		// Generate summary
+		summaryReq := summarizer.SummaryRequest{
+			Content: content,
+			Length:  summaryLength,
+			Model:   tldrModel,
+		}
+
+		resp, err := sum.Summarize(cmd.Context(), summaryReq)
+		if err != nil {
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error generating summary: %v\n", err)
+			os.Exit(1)
+		}
+
+		// Output the summary
+		_, _ = fmt.Fprint(cmd.OutOrStdout(), resp.Summary)
+	},
+}
+
 var daemonCmd = &cobra.Command{
 	Use:   "daemon",
 	Short: "Manage the Chrome daemon",
@@ -574,6 +642,7 @@ func init() {
 	rootCmd.Flags().StringVar(&domReadyTimeout, "dom-ready-timeout", "5s", "Timeout for DOM readiness detection")
 	rootCmd.Flags().StringVar(&waitForSelector, "wait-for-selector", "", "Wait for specific CSS selector to appear before extraction")
 	rootCmd.Flags().BoolVar(&debugReadiness, "debug-readiness", false, "Show detailed DOM readiness detection information")
+	rootCmd.Flags().BoolVar(&noLCPWait, "no-lcp-wait", false, "Disable LCP-based readiness (use legacy readiness)")
 
 	// Text node tree flags
 	rootCmd.Flags().BoolVar(&textNodeTree, "text-node-tree", false, "Build hierarchical text node tree structure")
@@ -600,6 +669,7 @@ func init() {
 	fetchCmd.Flags().StringVar(&domReadyTimeout, "dom-ready-timeout", "5s", "Timeout for DOM readiness detection")
 	fetchCmd.Flags().StringVar(&waitForSelector, "wait-for-selector", "", "Wait for specific CSS selector to appear before extraction")
 	fetchCmd.Flags().BoolVar(&debugReadiness, "debug-readiness", false, "Show detailed DOM readiness detection information")
+	fetchCmd.Flags().BoolVar(&noLCPWait, "no-lcp-wait", false, "Disable LCP-based readiness (use legacy readiness)")
 
 	// Text node tree flags for fetch command
 	fetchCmd.Flags().BoolVar(&textNodeTree, "text-node-tree", false, "Build hierarchical text node tree structure")
@@ -620,9 +690,18 @@ func init() {
 	fetchCmd.Flags().BoolVar(&markdownRenderer, "markdown-renderer", false, "Convert content tree to clean, formatted markdown")
 	fetchCmd.Flags().StringVar(&emphasisStyle, "emphasis-style", "asterisk", "Emphasis style: 'asterisk' (*) or 'underscore' (_)")
 	fetchCmd.Flags().StringVar(&listStyle, "list-style", "dash", "List style: 'dash' (-), 'asterisk' (*), or 'plus' (+)")
+
+	// TL;DR summarizer flags
+	tldrCmd.Flags().StringVar(&tldrAPIKey, "api-key", "", "OpenAI API key (can also use OPENAI_API_KEY env var)")
+	tldrCmd.Flags().StringVar(&tldrModel, "model", "gpt-3.5-turbo", "OpenAI model to use for summarization")
+	tldrCmd.Flags().StringVar(&tldrSummaryLength, "summary-length", "medium", "Summary length: short, medium, or long")
+	tldrCmd.Flags().StringVar(&tldrBaseURL, "base-url", "", "Custom OpenAI API base URL")
+	tldrCmd.Flags().StringVar(&tldrTimeout, "timeout", "60s", "Request timeout duration")
+
 	// Add all commands to root
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(fetchCmd)
+	rootCmd.AddCommand(tldrCmd)
 	rootCmd.AddCommand(daemonCmd)
 }
 
@@ -651,7 +730,7 @@ func shouldUseChromeForFile() bool {
 // createReadinessChecker creates a ReadinessChecker based on CLI flags
 func createReadinessChecker() (*pageready.ReadinessChecker, error) {
 	// Only create checker if any DOM ready flags are set
-	if !waitForFrameworks && domReadyTimeout == "5s" && waitForSelector == "" && !debugReadiness {
+	if !waitForFrameworks && domReadyTimeout == "5s" && waitForSelector == "" && !debugReadiness && !noLCPWait {
 		return nil, nil // Use default behavior
 	}
 
@@ -677,8 +756,8 @@ func createReadinessChecker() (*pageready.ReadinessChecker, error) {
 		checker = checker.WithCustomSelectors([]string{waitForSelector})
 	}
 
-	// Set debug mode
-	checker = checker.WithDebug(debugReadiness)
+	// Set debug mode and LCP default (unless explicitly disabled)
+	checker = checker.WithDebug(debugReadiness).WithLCP(!noLCPWait)
 
 	return checker, nil
 }
@@ -735,6 +814,74 @@ func fetchURL(url string) (string, error) {
 	}
 
 	return string(content), nil
+}
+
+// extractContentWithPipeline extracts content using the complete F1-F5 pipeline for TL;DR
+func extractContentWithPipeline(ctx context.Context, target string) (string, error) {
+	var content string
+	var err error
+
+	// Step 1: Get raw content (URL or file)
+	if strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://") {
+		// Use Chrome for URLs to enable F1-F5 pipeline
+		content, err = fetchURLWithChrome(ctx, target)
+		if err != nil {
+			return "", fmt.Errorf("failed to fetch URL: %w", err)
+		}
+	} else {
+		// For files, always use Chrome to ensure consistent processing
+		fileURL := "file://" + target
+		content, err = fetchURLWithChrome(ctx, fileURL)
+		if err != nil {
+			// Fallback to direct file reading if Chrome fails
+			content, err = readFile(target)
+			if err != nil {
+				return "", fmt.Errorf("failed to read file: %w", err)
+			}
+		}
+	}
+
+	// Step 2: F2 - Build content tree
+	treeBuilder := tree.NewTreeBuilder().
+		WithFilterNavigation(true).  // Enable navigation filtering for cleaner content
+		WithPreserveAttributes(true) // Preserve attributes for link handling
+
+	root, err := treeBuilder.BuildTree(ctx, content)
+	if err != nil {
+		return "", fmt.Errorf("failed to build content tree: %w", err)
+	}
+
+	// Step 3: F3 - Apply content filtering
+	contentFilter := filter.NewContentFilter().
+		WithConfig(filter.FilterConfig{
+			AggressiveMode: true, // Use aggressive filtering for cleaner summaries
+		})
+
+	root, err = contentFilter.FilterTree(ctx, root)
+	if err != nil {
+		return "", fmt.Errorf("failed to filter content: %w", err)
+	}
+
+	// Step 4: F4 - Process media elements
+	mediaHandler := media.NewMediaHandler().
+		WithIncludeDecorative(false) // Exclude decorative images for summaries
+
+	err = mediaHandler.ProcessMediaInTree(ctx, root)
+	if err != nil {
+		return "", fmt.Errorf("failed to process media elements: %w", err)
+	}
+
+	// Step 5: F5 - Convert to clean markdown
+	renderer := markdown.NewTreeRenderer().
+		WithEmphasisStyle("asterisk").
+		WithListStyle("dash")
+
+	markdownContent, err := renderer.RenderTree(ctx, root)
+	if err != nil {
+		return "", fmt.Errorf("failed to render markdown: %w", err)
+	}
+
+	return markdownContent, nil
 }
 
 func main() {

@@ -32,7 +32,9 @@ type RenderConfig struct {
 type HeadingStyle string
 
 const (
-	ATXHeading    HeadingStyle = "atx"    // # ## ###
+	// ATXHeading uses # prefix style headings
+	ATXHeading HeadingStyle = "atx" // # ## ###
+	// SetextHeading uses underline style headings
 	SetextHeading HeadingStyle = "setext" // === ---
 )
 
@@ -53,7 +55,9 @@ type EmphasisStyle struct {
 type CodeBlockStyle string
 
 const (
+	// FencedCodeBlock uses ``` style code blocks
 	FencedCodeBlock   CodeBlockStyle = "fenced"   // ```
+	// IndentedCodeBlock uses 4-space indented code blocks
 	IndentedCodeBlock CodeBlockStyle = "indented" // 4-space indent
 )
 

@@ -6,6 +6,7 @@ toolchain go1.24.7
 
 require (
 	github.com/chromedp/chromedp v0.14.1
+	github.com/sashabaranov/go-openai v1.41.2
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/net v0.44.0

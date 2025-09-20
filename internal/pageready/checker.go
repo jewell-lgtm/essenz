@@ -16,6 +16,7 @@ type ReadinessChecker struct {
 	FrameworkHints  []string
 	CustomSelectors []string
 	Debug           bool
+	UseLCP          bool
 }
 
 // ReadinessResult contains information about page readiness detection.
@@ -34,6 +35,7 @@ func NewReadinessChecker() *ReadinessChecker {
 		FrameworkHints:  []string{},
 		CustomSelectors: []string{},
 		Debug:           false,
+		UseLCP:          true, // default: LCP-based readiness
 	}
 }
 
@@ -61,6 +63,12 @@ func (r *ReadinessChecker) WithDebug(debug bool) *ReadinessChecker {
 	return r
 }
 
+// WithLCP toggles Largest Contentful Paint readiness.
+func (r *ReadinessChecker) WithLCP(enabled bool) *ReadinessChecker {
+	r.UseLCP = enabled
+	return r
+}
+
 // WaitForReady waits for the page to be ready according to configured criteria.
 func (r *ReadinessChecker) WaitForReady(ctx context.Context, chromeCtx context.Context) (*ReadinessResult, error) {
 	start := time.Now()
@@ -77,8 +85,24 @@ func (r *ReadinessChecker) WaitForReady(ctx context.Context, chromeCtx context.C
 		DebugInfo: "",
 	}
 
-	// Start with basic DOM ready detection
-	err := r.waitForBasicDOMReady(timeoutCtx, chromeCtx, result)
+	var err error
+
+	// Prefer LCP readiness when enabled
+	if r.UseLCP {
+		if r.Debug {
+			result.DebugInfo += "Waiting for LCP; "
+		}
+		if err = r.waitForLCP(timeoutCtx, chromeCtx, result); err != nil {
+			if r.Debug {
+				result.DebugInfo += fmt.Sprintf("LCP wait failed: %v; falling back; ", err)
+			}
+			// fall back to basic DOM ready
+			err = r.waitForBasicDOMReady(timeoutCtx, chromeCtx, result)
+		}
+	} else {
+		// Start with basic DOM ready detection
+		err = r.waitForBasicDOMReady(timeoutCtx, chromeCtx, result)
+	}
 	if err != nil {
 		result.Error = err
 		result.WaitTime = time.Since(start)
@@ -114,6 +138,42 @@ func (r *ReadinessChecker) WaitForReady(ctx context.Context, chromeCtx context.C
 	}
 
 	return result, nil
+}
+
+// waitForLCP injects an observer and waits until the first LCP entry is observed.
+func (r *ReadinessChecker) waitForLCP(_ context.Context, chromeCtx context.Context, result *ReadinessResult) error {
+	// Inject observer early
+	var _ignored bool
+	inject := `(function(){
+      try{
+        if (window.__essenzLCPInjected__) return true;
+        window.__essenzLCPInjected__=true;window.__essenzLCP__=null;window.__essenzLCP_READY__=false;
+        function S(e){var el=e.element||null;var o={startTime:e.startTime,url:e.url||null,size:e.size||null,tag:null,id:null,class:null,text:null,src:null};
+          if(el){o.tag=(el.tagName||'').toLowerCase();o.id=el.id||null;o.class=el.className||null; if(o.tag==='img'&&el.currentSrc){o.src=el.currentSrc;} if(el.textContent&&o.tag!=='img'){o.text=(el.textContent||'').trim().slice(0,200);} }
+          return o; }
+        const po=new PerformanceObserver(list=>{ for(const e of list.getEntries()){ window.__essenzLCP__=S(e); window.__essenzLCP_READY__=true; }});
+        po.observe({type:'largest-contentful-paint', buffered:true});
+        document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden'){ try{po.disconnect();}catch(_){}}});
+        return true;
+      }catch(_){return false}
+    })();`
+	if err := chromedp.Run(chromeCtx, chromedp.EvaluateAsDevTools(inject, &_ignored)); err != nil {
+		return fmt.Errorf("failed to inject LCP observer: %w", err)
+	}
+	// Poll for readiness flag
+	deadline := time.Now().Add(r.MaxWaitTime)
+	for time.Now().Before(deadline) {
+		var ready bool
+		if err := chromedp.Run(chromeCtx, chromedp.EvaluateAsDevTools("Boolean(window.__essenzLCP_READY__)||false", &ready)); err == nil && ready {
+			result.EventType = "LCP"
+			if r.Debug {
+				result.DebugInfo += "LCP observed; "
+			}
+			return nil
+		}
+		time.Sleep(150 * time.Millisecond)
+	}
+	return fmt.Errorf("timeout waiting for LCP")
 }
 
 // waitForBasicDOMReady waits for the basic DOM to be ready.

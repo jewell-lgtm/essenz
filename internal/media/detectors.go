@@ -47,7 +47,7 @@ func (d *ImageDetector) Extract(node *tree.TextNode) []MediaElement {
 	switch tag {
 	case "img":
 		element := MediaElement{
-			Type: IMAGE,
+			Type: Image,
 			URL:  node.Attributes["src"],
 		}
 
@@ -102,7 +102,7 @@ func (d *VideoDetector) CanHandle(node *tree.TextNode) bool {
 // Extract extracts video information from the node.
 func (d *VideoDetector) Extract(node *tree.TextNode) []MediaElement {
 	element := MediaElement{
-		Type: VIDEO,
+		Type: Video,
 	}
 
 	// Try to find a source element
@@ -179,7 +179,7 @@ func (d *AudioDetector) CanHandle(node *tree.TextNode) bool {
 // Extract extracts audio information from the node.
 func (d *AudioDetector) Extract(node *tree.TextNode) []MediaElement {
 	element := MediaElement{
-		Type: AUDIO,
+		Type: Audio,
 	}
 
 	// Try to find a source element
@@ -253,7 +253,7 @@ func (d *SocialEmbedDetector) CanHandle(node *tree.TextNode) bool {
 // Extract extracts social media embed information from the node.
 func (d *SocialEmbedDetector) Extract(node *tree.TextNode) []MediaElement {
 	element := MediaElement{
-		Type: SOCIAL_EMBED,
+		Type: SocialEmbed,
 	}
 
 	class := strings.ToLower(node.Attributes["class"])
@@ -368,7 +368,7 @@ func (d *InteractiveMediaDetector) CanHandle(node *tree.TextNode) bool {
 // Extract extracts interactive media information from the node.
 func (d *InteractiveMediaDetector) Extract(node *tree.TextNode) []MediaElement {
 	element := MediaElement{
-		Type: INTERACTIVE,
+		Type: Interactive,
 	}
 
 	tag := strings.ToLower(node.Tag)

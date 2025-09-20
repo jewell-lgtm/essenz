@@ -27,7 +27,7 @@ func (er *EmphasisRenderer) CanRender(node *tree.TextNode) bool {
 }
 
 // Render renders emphasis formatting
-func (er *EmphasisRenderer) Render(content string, node *tree.TextNode) string {
+func (er *EmphasisRenderer) Render(content string, _ *tree.TextNode) string {
 	if content == "" {
 		return ""
 	}
@@ -49,7 +49,7 @@ func (sr *StrongRenderer) CanRender(node *tree.TextNode) bool {
 }
 
 // Render renders strong formatting
-func (sr *StrongRenderer) Render(content string, node *tree.TextNode) string {
+func (sr *StrongRenderer) Render(content string, _ *tree.TextNode) string {
 	if content == "" {
 		return ""
 	}
@@ -97,7 +97,7 @@ func (csr *CodeSpanRenderer) CanRender(node *tree.TextNode) bool {
 }
 
 // Render renders inline code formatting
-func (csr *CodeSpanRenderer) Render(content string, node *tree.TextNode) string {
+func (csr *CodeSpanRenderer) Render(content string, _ *tree.TextNode) string {
 	if content == "" {
 		return ""
 	}

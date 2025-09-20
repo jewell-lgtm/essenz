@@ -34,11 +34,10 @@ func (sm *StyleManager) FormatHeading(level int, text string) string {
 		} else if level == 2 {
 			underline := strings.Repeat("-", len(text))
 			return fmt.Sprintf("%s\n%s", text, underline)
-		} else {
-			// Fallback to ATX for levels 3-6
-			prefix := strings.Repeat("#", level)
-			return fmt.Sprintf("%s %s", prefix, text)
 		}
+		// Fallback to ATX for levels 3-6
+		prefix := strings.Repeat("#", level)
+		return fmt.Sprintf("%s %s", prefix, text)
 	default:
 		prefix := strings.Repeat("#", level)
 		return fmt.Sprintf("%s %s", prefix, text)
@@ -174,7 +173,7 @@ func (sm *StyleManager) WrapText(text string, width int) string {
 		} else {
 			currentLine = append(currentLine, word)
 			if currentLength > 0 {
-				currentLength += 1 // Space
+				currentLength++ // Space
 			}
 			currentLength += wordLength
 		}

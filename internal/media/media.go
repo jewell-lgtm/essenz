@@ -45,13 +45,20 @@ type MediaReplacement struct {
 type MediaType int
 
 const (
-	IMAGE MediaType = iota
-	VIDEO
-	AUDIO
-	CHART
-	DIAGRAM
-	SOCIAL_EMBED
-	INTERACTIVE
+	// Image represents image media types
+	Image MediaType = iota
+	// Video represents video media types
+	Video
+	// Audio represents audio media types
+	Audio
+	// Chart represents chart/graph media types
+	Chart
+	// Diagram represents diagram media types
+	Diagram
+	// SocialEmbed represents social media embed types
+	SocialEmbed
+	// Interactive represents interactive media types
+	Interactive
 )
 
 // Dimensions represents the dimensions of a media element.
@@ -252,7 +259,7 @@ func (mh *MediaHandler) createFallbackReplacement(node *tree.TextNode) MediaRepl
 	}
 
 	return MediaReplacement{
-		Type:        IMAGE, // Default to image
+		Type:        Image, // Default to image
 		Description: description,
 		Context:     mh.analyzer.ExtractContext(node),
 		Alternative: description,

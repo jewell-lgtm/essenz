@@ -31,7 +31,7 @@ func (hr *HeadingRenderer) CanRender(node *tree.TextNode) bool {
 }
 
 // Render renders a heading element
-func (hr *HeadingRenderer) Render(node *tree.TextNode, state *RenderState, renderer *TreeRenderer) (string, error) {
+func (hr *HeadingRenderer) Render(node *tree.TextNode, _ *RenderState, _ *TreeRenderer) (string, error) {
 	level := hr.getHeadingLevel(node.Tag)
 	content := hr.extractTextContent(node)
 
@@ -133,7 +133,7 @@ func (pr *ParagraphRenderer) renderParagraphContent(node *tree.TextNode, state *
 }
 
 // renderInlineElement renders inline elements within paragraphs
-func (pr *ParagraphRenderer) renderInlineElement(node *tree.TextNode, state *RenderState, renderer *TreeRenderer) (string, error) {
+func (pr *ParagraphRenderer) renderInlineElement(node *tree.TextNode, _ *RenderState, renderer *TreeRenderer) (string, error) {
 	tag := strings.ToLower(node.Tag)
 
 	switch tag {
@@ -155,7 +155,7 @@ func (pr *ParagraphRenderer) renderInlineElement(node *tree.TextNode, state *Ren
 }
 
 // renderLink renders link elements
-func (pr *ParagraphRenderer) renderLink(node *tree.TextNode, renderer *TreeRenderer) string {
+func (pr *ParagraphRenderer) renderLink(node *tree.TextNode, _ *TreeRenderer) string {
 	href := node.Attributes["href"]
 	text := pr.extractTextContent(node)
 
@@ -430,7 +430,7 @@ func (cbr *CodeBlockRenderer) CanRender(node *tree.TextNode) bool {
 }
 
 // Render renders a code block element
-func (cbr *CodeBlockRenderer) Render(node *tree.TextNode, state *RenderState, renderer *TreeRenderer) (string, error) {
+func (cbr *CodeBlockRenderer) Render(node *tree.TextNode, _ *RenderState, _ *TreeRenderer) (string, error) {
 	// Look for code element inside pre
 	var codeNode *tree.TextNode
 	var language string
