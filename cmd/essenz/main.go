@@ -15,6 +15,7 @@ import (
 	"github.com/jewell-lgtm/essenz/internal/daemon"
 	"github.com/jewell-lgtm/essenz/internal/extractor"
 	"github.com/jewell-lgtm/essenz/internal/filter"
+	"github.com/jewell-lgtm/essenz/internal/markdown"
 	"github.com/jewell-lgtm/essenz/internal/media"
 	"github.com/jewell-lgtm/essenz/internal/pageready"
 	"github.com/jewell-lgtm/essenz/internal/tree"
@@ -48,6 +49,10 @@ var preserveSelector string
 var mediaHandler bool
 var includeDecorative bool
 
+// Markdown renderer flags (F5)
+var markdownRenderer bool
+var emphasisStyle string
+var listStyle string
 var rootCmd = &cobra.Command{
 	Use:   "sz [URL or file path]",
 	Short: "Distill the web into semantic markdown",
@@ -166,8 +171,22 @@ Examples:
 				}
 			}
 
-			// Convert filtered tree back to readable text
-			content = treeBuilder.ToText(filtered)
+			// Apply markdown rendering if requested
+			if markdownRenderer {
+				renderer := markdown.NewTreeRenderer().
+					WithEmphasisStyle(emphasisStyle).
+					WithListStyle(listStyle)
+
+				markdownContent, err := renderer.RenderTree(cmd.Context(), filtered)
+				if err != nil {
+					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error rendering markdown: %v\n", err)
+					os.Exit(1)
+				}
+				content = markdownContent
+			} else {
+				// Convert filtered tree back to readable text
+				content = treeBuilder.ToText(filtered)
+			}
 
 			// Skip reader view processing when content filter is enabled
 			_, _ = fmt.Fprint(cmd.OutOrStdout(), content)
@@ -197,14 +216,56 @@ Examples:
 				os.Exit(1)
 			}
 
-			// Convert tree back to readable text
-			content = treeBuilder.ToText(root)
+			// Apply markdown rendering if requested
+			if markdownRenderer {
+				renderer := markdown.NewTreeRenderer().
+					WithEmphasisStyle(emphasisStyle).
+					WithListStyle(listStyle)
+
+				markdownContent, err := renderer.RenderTree(cmd.Context(), root)
+				if err != nil {
+					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error rendering markdown: %v\n", err)
+					os.Exit(1)
+				}
+				content = markdownContent
+			} else {
+				// Convert tree back to readable text
+				content = treeBuilder.ToText(root)
+			}
 
 			// Skip reader view processing when media handler is enabled
 			_, _ = fmt.Fprint(cmd.OutOrStdout(), content)
 			return
 		}
 
+		// Apply markdown rendering if requested (standalone mode)
+		if markdownRenderer {
+			// Build tree first
+			treeBuilder := tree.NewTreeBuilder().
+				WithFilterNavigation(false).
+				WithPreserveAttributes(true)
+
+			root, err := treeBuilder.BuildTree(cmd.Context(), content)
+			if err != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error building tree for markdown rendering: %v\n", err)
+				os.Exit(1)
+			}
+
+			// Apply markdown rendering
+			renderer := markdown.NewTreeRenderer().
+				WithEmphasisStyle(emphasisStyle).
+				WithListStyle(listStyle)
+
+			markdownContent, err := renderer.RenderTree(cmd.Context(), root)
+			if err != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error rendering markdown: %v\n", err)
+				os.Exit(1)
+			}
+
+			// Skip reader view processing when markdown renderer is enabled
+			_, _ = fmt.Fprint(cmd.OutOrStdout(), markdownContent)
+			return
+		}
 		// Apply reader view processing by default, unless --raw flag is used
 		if !rawOutput {
 			ext := extractor.New()
@@ -343,8 +404,22 @@ Examples:
 				}
 			}
 
-			// Convert filtered tree back to readable text
-			content = treeBuilder.ToText(filtered)
+			// Apply markdown rendering if requested
+			if markdownRenderer {
+				renderer := markdown.NewTreeRenderer().
+					WithEmphasisStyle(emphasisStyle).
+					WithListStyle(listStyle)
+
+				markdownContent, err := renderer.RenderTree(cmd.Context(), filtered)
+				if err != nil {
+					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error rendering markdown: %v\n", err)
+					os.Exit(1)
+				}
+				content = markdownContent
+			} else {
+				// Convert filtered tree back to readable text
+				content = treeBuilder.ToText(filtered)
+			}
 
 			// Skip reader view processing when content filter is enabled
 			_, _ = fmt.Fprint(cmd.OutOrStdout(), content)
@@ -374,14 +449,56 @@ Examples:
 				os.Exit(1)
 			}
 
-			// Convert tree back to readable text
-			content = treeBuilder.ToText(root)
+			// Apply markdown rendering if requested
+			if markdownRenderer {
+				renderer := markdown.NewTreeRenderer().
+					WithEmphasisStyle(emphasisStyle).
+					WithListStyle(listStyle)
+
+				markdownContent, err := renderer.RenderTree(cmd.Context(), root)
+				if err != nil {
+					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error rendering markdown: %v\n", err)
+					os.Exit(1)
+				}
+				content = markdownContent
+			} else {
+				// Convert tree back to readable text
+				content = treeBuilder.ToText(root)
+			}
 
 			// Skip reader view processing when media handler is enabled
 			_, _ = fmt.Fprint(cmd.OutOrStdout(), content)
 			return
 		}
 
+		// Apply markdown rendering if requested (standalone mode)
+		if markdownRenderer {
+			// Build tree first
+			treeBuilder := tree.NewTreeBuilder().
+				WithFilterNavigation(false).
+				WithPreserveAttributes(true)
+
+			root, err := treeBuilder.BuildTree(cmd.Context(), content)
+			if err != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error building tree for markdown rendering: %v\n", err)
+				os.Exit(1)
+			}
+
+			// Apply markdown rendering
+			renderer := markdown.NewTreeRenderer().
+				WithEmphasisStyle(emphasisStyle).
+				WithListStyle(listStyle)
+
+			markdownContent, err := renderer.RenderTree(cmd.Context(), root)
+			if err != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error rendering markdown: %v\n", err)
+				os.Exit(1)
+			}
+
+			// Skip reader view processing when markdown renderer is enabled
+			_, _ = fmt.Fprint(cmd.OutOrStdout(), markdownContent)
+			return
+		}
 		// Apply reader view processing if requested
 		if readerView {
 			ext := extractor.New()
@@ -473,6 +590,10 @@ func init() {
 	rootCmd.Flags().BoolVar(&mediaHandler, "media-handler", false, "Replace media elements with descriptive text")
 	rootCmd.Flags().BoolVar(&includeDecorative, "include-decorative", false, "Include decorative images in media processing")
 
+	// Markdown renderer flags
+	rootCmd.Flags().BoolVar(&markdownRenderer, "markdown-renderer", false, "Convert content tree to clean, formatted markdown")
+	rootCmd.Flags().StringVar(&emphasisStyle, "emphasis-style", "asterisk", "Emphasis style: 'asterisk' (*) or 'underscore' (_)")
+	rootCmd.Flags().StringVar(&listStyle, "list-style", "dash", "List style: 'dash' (-), 'asterisk' (*), or 'plus' (+)")
 	// Add flags to fetch command
 	fetchCmd.Flags().BoolVarP(&readerView, "reader-view", "r", false, "Extract main content and convert to clean markdown")
 	fetchCmd.Flags().BoolVar(&waitForFrameworks, "wait-for-frameworks", false, "Enable framework-specific readiness detection (React, Vue, Next.js)")
@@ -495,6 +616,10 @@ func init() {
 	fetchCmd.Flags().BoolVar(&mediaHandler, "media-handler", false, "Replace media elements with descriptive text")
 	fetchCmd.Flags().BoolVar(&includeDecorative, "include-decorative", false, "Include decorative images in media processing")
 
+	// Markdown renderer flags for fetch command
+	fetchCmd.Flags().BoolVar(&markdownRenderer, "markdown-renderer", false, "Convert content tree to clean, formatted markdown")
+	fetchCmd.Flags().StringVar(&emphasisStyle, "emphasis-style", "asterisk", "Emphasis style: 'asterisk' (*) or 'underscore' (_)")
+	fetchCmd.Flags().StringVar(&listStyle, "list-style", "dash", "List style: 'dash' (-), 'asterisk' (*), or 'plus' (+)")
 	// Add all commands to root
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(fetchCmd)
