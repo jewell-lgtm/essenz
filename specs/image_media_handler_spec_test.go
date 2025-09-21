@@ -16,7 +16,11 @@ import (
 func TestImageMediaHandlerSpec(t *testing.T) {
 	// Build binary for testing
 	binary := filepath.Join(os.TempDir(), "sz-media-test")
-	err := exec.Command("go", "build", "-o", binary, "./cmd/essenz").Run()
+	// Build the sz binary from project root
+	cmd := exec.Command("go", "build", "-o", binary, "./cmd/essenz")
+	// Set working directory to project root
+	cmd.Dir = ".."
+	err := cmd.Run()
 	require.NoError(t, err, "Failed to build binary")
 	defer func() { _ = os.Remove(binary) }()
 
