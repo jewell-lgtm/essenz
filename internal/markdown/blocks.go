@@ -118,7 +118,13 @@ func (pr *ParagraphRenderer) renderParagraphContent(node *tree.TextNode, state *
 
 	for _, child := range node.Children {
 		if child.Tag == "#text" {
-			result.WriteString(renderer.renderTextContent(child.Text, state))
+			// Preserve original spacing for text nodes within paragraphs
+			text := child.Text
+			if !state.WithinCode {
+				// Clean up excessive whitespace but preserve single spaces
+				text = strings.Join(strings.Fields(text), " ")
+			}
+			result.WriteString(text)
 		} else {
 			// Handle inline elements
 			inline, err := pr.renderInlineElement(child, state, renderer)

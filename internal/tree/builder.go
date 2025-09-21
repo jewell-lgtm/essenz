@@ -115,86 +115,103 @@ func (tb *TreeBuilder) traverseNode(ctx context.Context, node *html.Node, parent
 
 	switch node.Type {
 	case html.ElementNode:
-		tagName := strings.ToLower(node.Data)
-
-		// Always skip script, style, and noscript tags
-		if tagName == "script" || tagName == "style" || tagName == "noscript" {
-			return currentIndex
-		}
-
-		// Skip navigation elements if filtering is enabled
-		if tb.filterNavigation && tb.navigationTags[tagName] {
-			return currentIndex
-		}
-
-		// Check for hidden content when filtering is enabled
-		if tb.filterNavigation {
-			for _, attr := range node.Attr {
-				// Skip elements with hidden/invisible classes
-				if attr.Key == "class" && (strings.Contains(attr.Val, "hidden") ||
-					strings.Contains(attr.Val, "invisible") ||
-					strings.Contains(attr.Val, "sr-only")) {
-					return currentIndex
-				}
-				// Skip elements with display:none or visibility:hidden
-				if attr.Key == "style" && (strings.Contains(attr.Val, "display:none") ||
-					strings.Contains(attr.Val, "display: none") ||
-					strings.Contains(attr.Val, "visibility:hidden") ||
-					strings.Contains(attr.Val, "visibility: hidden")) {
-					return currentIndex
-				}
-			}
-		}
-
-		// Create element node
-		elementNode := &TextNode{
-			Tag:        node.Data,
-			Attributes: make(map[string]string),
-			Children:   make([]*TextNode, 0),
-			Parent:     parent,
-			Depth:      depth,
-			Index:      currentIndex,
-		}
-
-		// Preserve attributes if enabled
-		if tb.preserveAttributes {
-			for _, attr := range node.Attr {
-				elementNode.Attributes[attr.Key] = attr.Val
-			}
-		}
-
-		parent.Children = append(parent.Children, elementNode)
-		currentIndex++
-
-		// Process child nodes
-		for child := node.FirstChild; child != nil; child = child.NextSibling {
-			currentIndex = tb.traverseNode(ctx, child, elementNode, depth+1, currentIndex)
-		}
-
+		return tb.processElementNode(ctx, node, parent, depth, currentIndex)
 	case html.TextNode:
-		text := strings.TrimSpace(node.Data)
-
-		// Skip empty text nodes unless whitespace is explicitly included
-		if text == "" && !tb.includeWhitespace {
-			return currentIndex
-		}
-
-		// Create text node
-		textNode := &TextNode{
-			Text:       node.Data, // Keep original text including whitespace
-			Tag:        "#text",
-			Attributes: make(map[string]string),
-			Children:   make([]*TextNode, 0),
-			Parent:     parent,
-			Depth:      depth,
-			Index:      currentIndex,
-		}
-
-		parent.Children = append(parent.Children, textNode)
-		currentIndex++
+		return tb.processTextNode(node, parent, depth, currentIndex)
 	}
 
 	return currentIndex
+}
+
+// processElementNode processes an HTML element node.
+func (tb *TreeBuilder) processElementNode(ctx context.Context, node *html.Node, parent *TextNode, depth, index int) int {
+	tagName := strings.ToLower(node.Data)
+
+	// Always skip script, style, and noscript tags
+	if tagName == "script" || tagName == "style" || tagName == "noscript" {
+		return index
+	}
+
+	// Skip navigation elements if filtering is enabled
+	if tb.filterNavigation && tb.navigationTags[tagName] {
+		return index
+	}
+
+	// Check for hidden content when filtering is enabled
+	if tb.filterNavigation && tb.isHiddenElement(node) {
+		return index
+	}
+
+	// Create element node
+	elementNode := &TextNode{
+		Tag:        node.Data,
+		Attributes: make(map[string]string),
+		Children:   make([]*TextNode, 0),
+		Parent:     parent,
+		Depth:      depth,
+		Index:      index,
+	}
+
+	// Preserve attributes if enabled
+	if tb.preserveAttributes {
+		for _, attr := range node.Attr {
+			elementNode.Attributes[attr.Key] = attr.Val
+		}
+	}
+
+	parent.Children = append(parent.Children, elementNode)
+	currentIndex := index + 1
+
+	// Process child nodes
+	for child := node.FirstChild; child != nil; child = child.NextSibling {
+		currentIndex = tb.traverseNode(ctx, child, elementNode, depth+1, currentIndex)
+	}
+
+	return currentIndex
+}
+
+// processTextNode processes an HTML text node.
+func (tb *TreeBuilder) processTextNode(node *html.Node, parent *TextNode, depth, index int) int {
+	text := strings.TrimSpace(node.Data)
+
+	// Skip empty text nodes unless whitespace is explicitly included
+	if text == "" && !tb.includeWhitespace {
+		return index
+	}
+
+	// Create text node
+	textNode := &TextNode{
+		Text:       node.Data, // Keep original text including whitespace
+		Tag:        "#text",
+		Attributes: make(map[string]string),
+		Children:   make([]*TextNode, 0),
+		Parent:     parent,
+		Depth:      depth,
+		Index:      index,
+	}
+
+	parent.Children = append(parent.Children, textNode)
+	return index + 1
+}
+
+// isHiddenElement checks if an element should be considered hidden.
+func (tb *TreeBuilder) isHiddenElement(node *html.Node) bool {
+	for _, attr := range node.Attr {
+		// Skip elements with hidden/invisible classes
+		if attr.Key == "class" && (strings.Contains(attr.Val, "hidden") ||
+			strings.Contains(attr.Val, "invisible") ||
+			strings.Contains(attr.Val, "sr-only")) {
+			return true
+		}
+		// Skip elements with display:none or visibility:hidden
+		if attr.Key == "style" && (strings.Contains(attr.Val, "display:none") ||
+			strings.Contains(attr.Val, "display: none") ||
+			strings.Contains(attr.Val, "visibility:hidden") ||
+			strings.Contains(attr.Val, "visibility: hidden")) {
+			return true
+		}
+	}
+	return false
 }
 
 // GetTextNodes returns all text nodes from the tree structure.

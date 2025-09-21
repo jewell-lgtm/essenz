@@ -126,9 +126,9 @@ func (mg *MediaMarkdownGenerator) generateAudioMarkdown(replacement MediaReplace
 // generateSocialMarkdown generates markdown for social media embeds.
 func (mg *MediaMarkdownGenerator) generateSocialMarkdown(replacement MediaReplacement) string {
 	// Format as blockquote
-	content := replacement.Description
+	content := replacement.Alternative
 	if content == "" {
-		content = replacement.Alternative
+		content = replacement.Description
 	}
 
 	lines := strings.Split(content, "\n")

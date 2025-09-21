@@ -84,38 +84,46 @@ func (f *LengthFilter) hasImportantChildren(node *tree.TextNode) bool {
 	}
 
 	for _, child := range node.Children {
-		tagName := strings.ToLower(child.Tag)
-
-		// Check for important child elements
-		switch tagName {
-		case "h1", "h2", "h3", "h4", "h5", "h6":
-			return true // Headings are important
-		case "img":
-			return true // Images might be important content
-		case "table":
-			return true // Tables contain structured data
-		case "ul", "ol", "dl":
-			return true // Lists contain structured information
-		case "blockquote":
-			return true // Quotes are usually important
-		case "code", "pre":
-			return true // Code blocks are important
+		if f.isImportantElement(child) || f.hasImportantChildren(child) {
+			return true
 		}
+	}
 
-		// Check for strong semantic indicators in attributes
-		if classValue, exists := child.Attributes["class"]; exists {
-			classLower := strings.ToLower(classValue)
-			if strings.Contains(classLower, "important") ||
-				strings.Contains(classLower, "highlight") ||
-				strings.Contains(classLower, "note") ||
-				strings.Contains(classLower, "warning") ||
-				strings.Contains(classLower, "alert") {
-				return true
-			}
-		}
+	return false
+}
 
-		// Recurse into children
-		if f.hasImportantChildren(child) {
+// isImportantElement checks if a single element is considered important.
+func (f *LengthFilter) isImportantElement(node *tree.TextNode) bool {
+	if f.isImportantTag(node.Tag) {
+		return true
+	}
+
+	return f.hasImportantClasses(node)
+}
+
+// isImportantTag checks if a tag name indicates importance.
+func (f *LengthFilter) isImportantTag(tag string) bool {
+	tagName := strings.ToLower(tag)
+	importantTags := map[string]bool{
+		"h1": true, "h2": true, "h3": true, "h4": true, "h5": true, "h6": true,
+		"img": true, "table": true, "ul": true, "ol": true, "dl": true,
+		"blockquote": true, "code": true, "pre": true,
+	}
+	return importantTags[tagName]
+}
+
+// hasImportantClasses checks if a node has CSS classes indicating importance.
+func (f *LengthFilter) hasImportantClasses(node *tree.TextNode) bool {
+	classValue, exists := node.Attributes["class"]
+	if !exists {
+		return false
+	}
+
+	classLower := strings.ToLower(classValue)
+	importantClasses := []string{"important", "highlight", "note", "warning", "alert"}
+
+	for _, class := range importantClasses {
+		if strings.Contains(classLower, class) {
 			return true
 		}
 	}

@@ -154,7 +154,19 @@ Examples:
 				os.Exit(1)
 			}
 
-			// Apply content filtering
+			// Apply media handling first to preserve meaningful images before filtering
+			if mediaHandler {
+				mediaHandler := media.NewMediaHandler().
+					WithIncludeDecorative(includeDecorative)
+
+				err := mediaHandler.ProcessMediaInTree(cmd.Context(), root)
+				if err != nil {
+					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error processing media elements: %v\n", err)
+					os.Exit(1)
+				}
+			}
+
+			// Apply content filtering after media handling
 			contentFilterer := filter.NewContentFilter().
 				WithAggressiveMode(aggressiveFiltering)
 
@@ -166,18 +178,6 @@ Examples:
 			if err != nil {
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error applying content filter: %v\n", err)
 				os.Exit(1)
-			}
-
-			// Apply media handling if requested after content filtering
-			if mediaHandler {
-				mediaHandler := media.NewMediaHandler().
-					WithIncludeDecorative(includeDecorative)
-
-				err := mediaHandler.ProcessMediaInTree(cmd.Context(), filtered)
-				if err != nil {
-					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error processing media elements: %v\n", err)
-					os.Exit(1)
-				}
 			}
 
 			// Apply markdown rendering if requested
@@ -387,7 +387,19 @@ Examples:
 				os.Exit(1)
 			}
 
-			// Apply content filtering
+			// Apply media handling first to preserve meaningful images before filtering
+			if mediaHandler {
+				mediaHandler := media.NewMediaHandler().
+					WithIncludeDecorative(includeDecorative)
+
+				err := mediaHandler.ProcessMediaInTree(cmd.Context(), root)
+				if err != nil {
+					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error processing media elements: %v\n", err)
+					os.Exit(1)
+				}
+			}
+
+			// Apply content filtering after media handling
 			contentFilterer := filter.NewContentFilter().
 				WithAggressiveMode(aggressiveFiltering)
 
@@ -399,18 +411,6 @@ Examples:
 			if err != nil {
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error applying content filter: %v\n", err)
 				os.Exit(1)
-			}
-
-			// Apply media handling if requested after content filtering
-			if mediaHandler {
-				mediaHandler := media.NewMediaHandler().
-					WithIncludeDecorative(includeDecorative)
-
-				err := mediaHandler.ProcessMediaInTree(cmd.Context(), filtered)
-				if err != nil {
-					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error processing media elements: %v\n", err)
-					os.Exit(1)
-				}
 			}
 
 			// Apply markdown rendering if requested

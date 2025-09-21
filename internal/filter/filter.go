@@ -73,7 +73,7 @@ func NewContentFilter() *ContentFilter {
 	filter.AddRule(NewSemanticTagFilter())
 	filter.AddRule(NewClassNameFilter())
 	filter.AddRule(NewLinkDensityFilter(0.3, 5)) // Balanced: 30% max link density, 5 min words
-	filter.AddRule(NewLengthFilter(10))          // Very low threshold but won't affect whitelist
+	filter.AddRule(NewLengthFilter(15))          // Filter very short content blocks
 
 	return filter
 }
@@ -157,33 +157,20 @@ func (cf *ContentFilter) filterNode(ctx context.Context, node *tree.TextNode, fi
 		return nil
 	}
 
-	// Check if node should be excluded by high-priority rules first (SemanticTagFilter, ClassNameFilter)
-	// These rules override whitelist for strong negative indicators
-	for _, rule := range cf.rules {
-		if rule.Priority() >= 80 && rule.ShouldExclude(node, filterCtx) {
-			if cf.config.DebugMode {
-				fmt.Printf("DEBUG: Excluding node by high-priority rule %s: %s (class=%v)\n", rule.Name(), node.Tag, node.Attributes["class"])
-			}
-			return nil // Remove this node
-		}
+	// Check whitelist protection first
+	isWhitelisted := cf.isWhitelisted(node)
+
+	// Apply high-priority rules
+	if cf.shouldExcludeByHighPriorityRules(node, filterCtx, isWhitelisted) {
+		return nil
 	}
 
-	// Check whitelist protection for remaining rules
-	isWhitelisted := cf.isWhitelisted(node)
-	if !isWhitelisted {
-		// Apply remaining lower-priority rules
-		for _, rule := range cf.rules {
-			if rule.Priority() < 80 && rule.ShouldExclude(node, filterCtx) {
-				if cf.config.DebugMode {
-					fmt.Printf("DEBUG: Excluding node by rule %s: %s (class=%v)\n", rule.Name(), node.Tag, node.Attributes["class"])
-				}
-				return nil // Remove this node
-			}
-		}
-	} else {
-		if cf.config.DebugMode {
-			fmt.Printf("DEBUG: Preserving whitelisted node: %s\n", node.Tag)
-		}
+	// Apply lower-priority rules if not whitelisted
+	if !isWhitelisted && cf.shouldExcludeByLowPriorityRules(node, filterCtx) {
+		return nil
+	}
+	if isWhitelisted && cf.config.DebugMode {
+		fmt.Printf("DEBUG: Preserving whitelisted node: %s\n", node.Tag)
 	}
 
 	// Node passes all filters, process its children
@@ -222,6 +209,17 @@ func (cf *ContentFilter) filterChildren(ctx context.Context, node *tree.TextNode
 
 // isWhitelisted checks if a node is in the whitelist.
 func (cf *ContentFilter) isWhitelisted(node *tree.TextNode) bool {
+	// Check if the node itself is whitelisted
+	if cf.isNodeWhitelisted(node) {
+		return true
+	}
+
+	// Check if the node is within a whitelisted container
+	return cf.isWithinWhitelistedContainer(node)
+}
+
+// isNodeWhitelisted checks if the specific node matches whitelist selectors.
+func (cf *ContentFilter) isNodeWhitelisted(node *tree.TextNode) bool {
 	// Check tag-based whitelist
 	for _, selector := range cf.config.PreserveWhitelist {
 		if strings.HasPrefix(selector, ".") {
@@ -235,6 +233,49 @@ func (cf *ContentFilter) isWhitelisted(node *tree.TextNode) bool {
 		} else {
 			// Tag selector
 			if strings.EqualFold(node.Tag, selector) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// isWithinWhitelistedContainer checks if a node is within a whitelisted parent container.
+func (cf *ContentFilter) isWithinWhitelistedContainer(node *tree.TextNode) bool {
+	current := node.Parent
+	for current != nil {
+		if cf.isNodeWhitelisted(current) {
+			return true
+		}
+		current = current.Parent
+	}
+	return false
+}
+
+// shouldExcludeByHighPriorityRules checks if a node should be excluded by high-priority rules
+// that can override whitelist protection.
+func (cf *ContentFilter) shouldExcludeByHighPriorityRules(node *tree.TextNode, filterCtx *FilterContext, _ bool) bool {
+	for _, rule := range cf.rules {
+		if rule.Priority() >= 80 {
+			if rule.ShouldExclude(node, filterCtx) {
+				if cf.config.DebugMode {
+					fmt.Printf("DEBUG: High-priority rule %s excluded node: %s\n", rule.Name(), node.Tag)
+				}
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// shouldExcludeByLowPriorityRules checks if a node should be excluded by lower-priority rules.
+func (cf *ContentFilter) shouldExcludeByLowPriorityRules(node *tree.TextNode, filterCtx *FilterContext) bool {
+	for _, rule := range cf.rules {
+		if rule.Priority() < 80 {
+			if rule.ShouldExclude(node, filterCtx) {
+				if cf.config.DebugMode {
+					fmt.Printf("DEBUG: Low-priority rule %s excluded node: %s\n", rule.Name(), node.Tag)
+				}
 				return true
 			}
 		}
