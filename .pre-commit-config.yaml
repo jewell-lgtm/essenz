@@ -39,6 +39,14 @@ repos:
         args: [run]
         pass_filenames: false
 
+      - id: checkmake
+        name: checkmake
+        entry: go
+        language: system
+        files: ^Makefile$
+        args: [run, github.com/checkmake/checkmake/cmd/checkmake@latest]
+        pass_filenames: true
+
   - repo: https://github.com/compilerla/conventional-pre-commit
     rev: v3.4.0
     hooks:

@@ -1,4 +1,7 @@
-.PHONY: build test lint fmt vet clean install help check-tools setup-pre-commit
+.PHONY: all build test lint fmt vet clean install help check-tools setup-pre-commit check
+
+# Default target
+all: build
 
 # Check tool versions
 check-tools:
@@ -15,12 +18,12 @@ build:
 
 # Run tests
 test:
-    go test -v ./...
+	go test -v ./...
 
 # Run tests in sandboxed environments (local caches and skipping env-dependent specs)
 test-sandbox:
-    mkdir -p .gocache
-    ESSENZ_SANDBOX=1 GOCACHE=$(PWD)/.gocache go test -v ./...
+	mkdir -p .gocache
+	ESSENZ_SANDBOX=1 GOCACHE=$(PWD)/.gocache go test -v ./...
 
 # Run linter
 lint:
@@ -54,14 +57,6 @@ check: check-tools fmt vet lint test
 # Show help
 help:
 	@echo "Available targets:"
-	@echo "  setup-pre-commit - Install pre-commit hooks"
-	@echo "  check-tools      - Check tool versions against .tool-versions"
+	@echo "  all              - Default target (build)"
 	@echo "  build            - Build the sz binary"
-	@echo "  test             - Run tests"
-	@echo "  lint             - Run golangci-lint"
-	@echo "  fmt              - Format code with gofmt and goimports"
-	@echo "  vet              - Run go vet"
-	@echo "  clean            - Clean build artifacts"
-	@echo "  install          - Install binary locally"
-	@echo "  check            - Run all checks (tools, fmt, vet, lint, test)"
-	@echo "  help             - Show this help message"
+	@echo "  check            - Run all checks"
