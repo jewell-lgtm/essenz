@@ -51,10 +51,7 @@ func (c *Client) FetchContent(_ context.Context, url string) (string, error) {
 	encoder := json.NewEncoder(conn)
 	decoder := json.NewDecoder(conn)
 
-	req := Request{
-		Action: "fetch",
-		URL:    url,
-	}
+	req := Request{Action: "fetch", URL: url}
 
 	if err := encoder.Encode(req); err != nil {
 		return "", fmt.Errorf("failed to send request: %w", err)
@@ -74,18 +71,50 @@ func (c *Client) FetchContent(_ context.Context, url string) (string, error) {
 }
 
 // FetchContentWithReadiness fetches content via the daemon with DOM readiness detection.
-func (c *Client) FetchContentWithReadiness(ctx context.Context, url string, _ *pageready.ReadinessChecker) (string, error) {
-	// For now, implement this by falling back to regular fetch
-	// TODO: Extend the daemon protocol to support readiness checking
-	content, err := c.FetchContent(ctx, url)
-	if err != nil {
-		return "", err
+func (c *Client) FetchContentWithReadiness(_ context.Context, url string, checker *pageready.ReadinessChecker) (string, error) {
+	// Ensure daemon is running
+	if !IsDaemonRunning() {
+		if err := StartDaemonIfNeeded(); err != nil {
+			return "", fmt.Errorf("failed to start daemon: %w", err)
+		}
+		time.Sleep(1 * time.Second)
 	}
 
-	// TODO: In future iterations, we'll integrate the readiness checker
-	// into the daemon server for proper DOM event waiting
+	conn, err := net.DialTimeout("unix", c.socketPath, 5*time.Second)
+	if err != nil {
+		return "", fmt.Errorf("failed to connect to daemon: %w", err)
+	}
+	defer func() { _ = conn.Close() }()
 
-	return content, nil
+	_ = conn.SetDeadline(time.Now().Add(30 * time.Second))
+
+	encoder := json.NewEncoder(conn)
+	decoder := json.NewDecoder(conn)
+
+	// Translate readiness checker to daemon spec
+	var spec *ReadinessSpec
+	if checker != nil {
+		spec = &ReadinessSpec{
+			TimeoutMillis: int(checker.MaxWaitTime / time.Millisecond),
+			UseLCP:        checker.UseLCP,
+			Debug:         checker.Debug,
+			Frameworks:    checker.FrameworkHints,
+			Selectors:     checker.CustomSelectors,
+		}
+	}
+	req := Request{Action: "fetch", URL: url, Readiness: spec}
+	if err := encoder.Encode(req); err != nil {
+		return "", fmt.Errorf("failed to send request: %w", err)
+	}
+
+	var resp Response
+	if err := decoder.Decode(&resp); err != nil {
+		return "", fmt.Errorf("failed to read response: %w", err)
+	}
+	if !resp.Success {
+		return "", fmt.Errorf("daemon error: %s", resp.Error)
+	}
+	return resp.Content, nil
 }
 
 // Ping checks if the daemon is responsive.

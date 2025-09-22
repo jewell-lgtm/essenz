@@ -56,7 +56,7 @@ type CodeBlockStyle string
 
 const (
 	// FencedCodeBlock uses ``` style code blocks
-	FencedCodeBlock   CodeBlockStyle = "fenced"   // ```
+	FencedCodeBlock CodeBlockStyle = "fenced" // ```
 	// IndentedCodeBlock uses 4-space indented code blocks
 	IndentedCodeBlock CodeBlockStyle = "indented" // 4-space indent
 )
@@ -86,7 +86,7 @@ func NewTreeRenderer() *TreeRenderer {
 			ListStyle: ListStyle{
 				UnorderedMarker: "-",
 				OrderedFormat:   "1.",
-				IndentSize:      2,
+				IndentSize:      3,
 			},
 			EmphasisStyle: EmphasisStyle{
 				Emphasis: "*",
@@ -211,7 +211,23 @@ func (tr *TreeRenderer) renderNode(ctx context.Context, node *tree.TextNode, sta
 		}
 	}
 
-	// If no block renderer handles it, render children
+	// Try inline renderers
+	for _, renderer := range tr.inline {
+		if renderer.CanRender(node) {
+			// Render children to get content
+			var content strings.Builder
+			for _, child := range node.Children {
+				childResult, err := tr.renderNode(ctx, child, state)
+				if err != nil {
+					return "", err
+				}
+				content.WriteString(childResult)
+			}
+			return renderer.Render(content.String(), node), nil
+		}
+	}
+
+	// If no renderer handles it, render children
 	var result strings.Builder
 	for _, child := range node.Children {
 		childResult, err := tr.renderNode(ctx, child, state)

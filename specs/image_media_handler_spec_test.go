@@ -15,10 +15,16 @@ import (
 // TestImageMediaHandlerSpec tests F4: Image and Media Handler functionality
 func TestImageMediaHandlerSpec(t *testing.T) {
 	// Build binary for testing
-	binary := filepath.Join(os.TempDir(), "sz-media-test")
-	err := exec.Command("go", "build", "-o", binary, "./cmd/essenz").Run()
+	_ = os.MkdirAll(".bin", 0o755)
+	buildOut := filepath.Join(".bin", "sz-media-test")
+	runOut := filepath.Join("..", buildOut)
+	// Build the sz binary from project root
+	cmd := exec.Command("go", "build", "-o", buildOut, "./cmd/essenz")
+	// Set working directory to project root
+	cmd.Dir = ".."
+	err := cmd.Run()
 	require.NoError(t, err, "Failed to build binary")
-	defer func() { _ = os.Remove(binary) }()
+	defer func() { _ = os.Remove(runOut) }()
 
 	t.Run("basic_image_handling", func(t *testing.T) {
 		t.Log("SPEC: Basic Image Handling")
@@ -49,7 +55,7 @@ func TestImageMediaHandlerSpec(t *testing.T) {
 		require.NoError(t, err)
 
 		// Test image replacement
-		cmd := exec.Command(binary, "--media-handler", tmpFile.Name())
+		cmd := exec.Command(runOut, "--media-handler", tmpFile.Name())
 		output, err := cmd.CombinedOutput()
 		require.NoError(t, err, "Command should succeed: %s", string(output))
 
@@ -97,7 +103,7 @@ func TestImageMediaHandlerSpec(t *testing.T) {
 		require.NoError(t, err)
 
 		// Test figure processing
-		cmd := exec.Command(binary, "--media-handler", tmpFile.Name())
+		cmd := exec.Command(runOut, "--media-handler", tmpFile.Name())
 		output, err := cmd.CombinedOutput()
 		require.NoError(t, err, "Command should succeed: %s", string(output))
 
@@ -149,7 +155,7 @@ func TestImageMediaHandlerSpec(t *testing.T) {
 		require.NoError(t, err)
 
 		// Test video processing
-		cmd := exec.Command(binary, "--media-handler", tmpFile.Name())
+		cmd := exec.Command(runOut, "--media-handler", tmpFile.Name())
 		output, err := cmd.CombinedOutput()
 		require.NoError(t, err, "Command should succeed: %s", string(output))
 
@@ -194,7 +200,7 @@ func TestImageMediaHandlerSpec(t *testing.T) {
 		require.NoError(t, err)
 
 		// Test missing alt text handling
-		cmd := exec.Command(binary, "--media-handler", tmpFile.Name())
+		cmd := exec.Command(runOut, "--media-handler", tmpFile.Name())
 		output, err := cmd.CombinedOutput()
 		require.NoError(t, err, "Command should succeed: %s", string(output))
 
@@ -242,7 +248,7 @@ func TestImageMediaHandlerSpec(t *testing.T) {
 		require.NoError(t, err)
 
 		// Test social media processing
-		cmd := exec.Command(binary, "--media-handler", tmpFile.Name())
+		cmd := exec.Command(runOut, "--media-handler", tmpFile.Name())
 		output, err := cmd.CombinedOutput()
 		require.NoError(t, err, "Command should succeed: %s", string(output))
 
@@ -292,7 +298,7 @@ func TestImageMediaHandlerSpec(t *testing.T) {
 
 		// Test with different configurations
 		t.Run("include_decorative_images", func(t *testing.T) {
-			cmd := exec.Command(binary, "--media-handler", "--include-decorative", tmpFile.Name())
+			cmd := exec.Command(runOut, "--media-handler", "--include-decorative", tmpFile.Name())
 			output, err := cmd.CombinedOutput()
 			require.NoError(t, err, "Command should succeed: %s", string(output))
 
@@ -301,7 +307,7 @@ func TestImageMediaHandlerSpec(t *testing.T) {
 		})
 
 		t.Run("exclude_decorative_images", func(t *testing.T) {
-			cmd := exec.Command(binary, "--media-handler", tmpFile.Name())
+			cmd := exec.Command(runOut, "--media-handler", tmpFile.Name())
 			output, err := cmd.CombinedOutput()
 			require.NoError(t, err, "Command should succeed: %s", string(output))
 
@@ -350,7 +356,7 @@ func TestImageMediaHandlerSpec(t *testing.T) {
 		require.NoError(t, err)
 
 		// Test with both content filter and media handler
-		cmd := exec.Command(binary, "--content-filter", "--media-handler", tmpFile.Name())
+		cmd := exec.Command(runOut, "--content-filter", "--media-handler", tmpFile.Name())
 		output, err := cmd.CombinedOutput()
 		require.NoError(t, err, "Command should succeed: %s", string(output))
 
@@ -405,7 +411,7 @@ func TestImageMediaHandlerSpec(t *testing.T) {
 
 		// Test processing time
 		start := time.Now()
-		cmd := exec.Command(binary, "--media-handler", tmpFile.Name())
+		cmd := exec.Command(runOut, "--media-handler", tmpFile.Name())
 		output, err := cmd.CombinedOutput()
 		duration := time.Since(start)
 

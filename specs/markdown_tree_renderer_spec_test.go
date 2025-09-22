@@ -15,10 +15,16 @@ import (
 // TestMarkdownTreeRendererSpec tests F5: Markdown Tree Renderer functionality
 func TestMarkdownTreeRendererSpec(t *testing.T) {
 	// Build binary for testing
-	binary := filepath.Join(os.TempDir(), "sz-markdown-test")
-	err := exec.Command("go", "build", "-o", binary, "./cmd/essenz").Run()
+	_ = os.MkdirAll(".bin", 0o755)
+	buildOut := filepath.Join(".bin", "sz-markdown-test")
+	runOut := filepath.Join("..", buildOut)
+	// Build the sz binary from project root
+	cmd := exec.Command("go", "build", "-o", buildOut, "./cmd/essenz")
+	// Set working directory to project root
+	cmd.Dir = ".."
+	err := cmd.Run()
 	require.NoError(t, err, "Failed to build binary")
-	defer func() { _ = os.Remove(binary) }()
+	defer func() { _ = os.Remove(runOut) }()
 
 	t.Run("basic_document_structure", func(t *testing.T) {
 		t.Log("SPEC: Basic Document Structure Rendering")
@@ -50,7 +56,7 @@ func TestMarkdownTreeRendererSpec(t *testing.T) {
 		require.NoError(t, err)
 
 		// Test markdown rendering
-		cmd := exec.Command(binary, "--markdown-renderer", tmpFile.Name())
+		cmd := exec.Command(runOut, "--markdown-renderer", tmpFile.Name())
 		output, err := cmd.CombinedOutput()
 		require.NoError(t, err, "Command should succeed: %s", string(output))
 
@@ -119,7 +125,7 @@ func TestMarkdownTreeRendererSpec(t *testing.T) {
 		require.NoError(t, err)
 
 		// Test list rendering
-		cmd := exec.Command(binary, "--markdown-renderer", tmpFile.Name())
+		cmd := exec.Command(runOut, "--markdown-renderer", tmpFile.Name())
 		output, err := cmd.CombinedOutput()
 		require.NoError(t, err, "Command should succeed: %s", string(output))
 
@@ -182,7 +188,7 @@ func TestMarkdownTreeRendererSpec(t *testing.T) {
 		require.NoError(t, err)
 
 		// Test nested list rendering
-		cmd := exec.Command(binary, "--markdown-renderer", tmpFile.Name())
+		cmd := exec.Command(runOut, "--markdown-renderer", tmpFile.Name())
 		output, err := cmd.CombinedOutput()
 		require.NoError(t, err, "Command should succeed: %s", string(output))
 
@@ -236,7 +242,7 @@ function example() {
 		require.NoError(t, err)
 
 		// Test blockquote and code rendering
-		cmd := exec.Command(binary, "--markdown-renderer", tmpFile.Name())
+		cmd := exec.Command(runOut, "--markdown-renderer", tmpFile.Name())
 		output, err := cmd.CombinedOutput()
 		require.NoError(t, err, "Command should succeed: %s", string(output))
 
@@ -293,7 +299,7 @@ function example() {
 		require.NoError(t, err)
 
 		// Test link rendering
-		cmd := exec.Command(binary, "--markdown-renderer", tmpFile.Name())
+		cmd := exec.Command(runOut, "--markdown-renderer", tmpFile.Name())
 		output, err := cmd.CombinedOutput()
 		require.NoError(t, err, "Command should succeed: %s", string(output))
 
@@ -347,7 +353,7 @@ function example() {
 
 		// Test default style
 		t.Run("default_style", func(t *testing.T) {
-			cmd := exec.Command(binary, "--markdown-renderer", tmpFile.Name())
+			cmd := exec.Command(runOut, "--markdown-renderer", tmpFile.Name())
 			output, err := cmd.CombinedOutput()
 			require.NoError(t, err, "Command should succeed: %s", string(output))
 
@@ -360,7 +366,7 @@ function example() {
 
 		// Test alternative styles with configuration
 		t.Run("underscore_emphasis", func(t *testing.T) {
-			cmd := exec.Command(binary, "--markdown-renderer", "--emphasis-style=underscore", tmpFile.Name())
+			cmd := exec.Command(runOut, "--markdown-renderer", "--emphasis-style=underscore", tmpFile.Name())
 			output, err := cmd.CombinedOutput()
 			require.NoError(t, err, "Command should succeed: %s", string(output))
 
@@ -370,7 +376,7 @@ function example() {
 		})
 
 		t.Run("asterisk_lists", func(t *testing.T) {
-			cmd := exec.Command(binary, "--markdown-renderer", "--list-style=asterisk", tmpFile.Name())
+			cmd := exec.Command(runOut, "--markdown-renderer", "--list-style=asterisk", tmpFile.Name())
 			output, err := cmd.CombinedOutput()
 			require.NoError(t, err, "Command should succeed: %s", string(output))
 
@@ -426,7 +432,7 @@ function example() {
 
 		// Test processing time
 		start := time.Now()
-		cmd := exec.Command(binary, "--markdown-renderer", tmpFile.Name())
+		cmd := exec.Command(runOut, "--markdown-renderer", tmpFile.Name())
 		output, err := cmd.CombinedOutput()
 		duration := time.Since(start)
 
@@ -495,7 +501,7 @@ function example() {
 		require.NoError(t, err)
 
 		// Test with full processing pipeline
-		cmd := exec.Command(binary, "--content-filter", "--media-handler", "--markdown-renderer", tmpFile.Name())
+		cmd := exec.Command(runOut, "--content-filter", "--media-handler", "--markdown-renderer", tmpFile.Name())
 		output, err := cmd.CombinedOutput()
 		require.NoError(t, err, "Command should succeed: %s", string(output))
 

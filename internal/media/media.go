@@ -84,6 +84,7 @@ func NewMediaHandler() *MediaHandler {
 	}
 
 	// Add default detectors
+	handler.AddDetector(NewFigureDetector()) // High priority for figures
 	handler.AddDetector(NewImageDetector())
 	handler.AddDetector(NewVideoDetector())
 	handler.AddDetector(NewAudioDetector())

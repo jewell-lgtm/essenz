@@ -118,7 +118,13 @@ func (pr *ParagraphRenderer) renderParagraphContent(node *tree.TextNode, state *
 
 	for _, child := range node.Children {
 		if child.Tag == "#text" {
-			result.WriteString(renderer.renderTextContent(child.Text, state))
+			// Preserve original spacing for text nodes within paragraphs
+			text := child.Text
+			if !state.WithinCode {
+				// Normalize internal whitespace while preserving leading/trailing spaces
+				text = pr.normalizeInternalWhitespace(text)
+			}
+			result.WriteString(text)
 		} else {
 			// Handle inline elements
 			inline, err := pr.renderInlineElement(child, state, renderer)
@@ -262,10 +268,13 @@ func (lr *ListRenderer) renderItemContent(node *tree.TextNode, state *RenderStat
 
 	for _, child := range node.Children {
 		if child.Tag == "#text" {
-			text := strings.TrimSpace(child.Text)
-			if text != "" {
-				result.WriteString(text)
+			// Preserve spacing like in paragraph renderer
+			text := child.Text
+			if !state.WithinCode {
+				// Normalize internal whitespace while preserving leading/trailing spaces
+				text = lr.normalizeInternalWhitespace(text)
 			}
+			result.WriteString(text)
 		} else if strings.ToLower(child.Tag) == "ul" || strings.ToLower(child.Tag) == "ol" {
 			// Handle nested lists
 			nested, err := lr.Render(child, state, renderer)
@@ -286,6 +295,30 @@ func (lr *ListRenderer) renderItemContent(node *tree.TextNode, state *RenderStat
 	}
 
 	return strings.TrimSpace(result.String()), nil
+}
+
+// normalizeInternalWhitespace normalizes internal whitespace while preserving leading/trailing spaces.
+func (lr *ListRenderer) normalizeInternalWhitespace(text string) string {
+	if text == "" {
+		return text
+	}
+
+	// Check if text starts or ends with whitespace
+	hasLeadingSpace := len(text) > 0 && (text[0] == ' ' || text[0] == '\t' || text[0] == '\n')
+	hasTrailingSpace := len(text) > 0 && (text[len(text)-1] == ' ' || text[len(text)-1] == '\t' || text[len(text)-1] == '\n')
+
+	// Normalize internal whitespace
+	normalized := strings.Join(strings.Fields(text), " ")
+
+	// Restore leading/trailing spaces if they existed
+	if hasLeadingSpace && normalized != "" {
+		normalized = " " + normalized
+	}
+	if hasTrailingSpace && normalized != "" {
+		normalized = normalized + " "
+	}
+
+	return normalized
 }
 
 // BlockquoteRenderer handles blockquote elements
@@ -347,7 +380,11 @@ func (br *BlockquoteRenderer) extractBlockquoteContent(node *tree.TextNode, stat
 			if err != nil {
 				return "", err
 			}
-			result.WriteString(content + " ")
+			// Ensure each paragraph becomes its own quoted line
+			trimmed := strings.TrimSpace(content)
+			if trimmed != "" {
+				result.WriteString(trimmed + "\n")
+			}
 		} else {
 			// Render other elements
 			content, err := renderer.renderNode(context.Background(), child, state)
@@ -367,7 +404,13 @@ func (br *BlockquoteRenderer) renderParagraphContent(node *tree.TextNode, state 
 
 	for _, child := range node.Children {
 		if child.Tag == "#text" {
-			result.WriteString(renderer.renderTextContent(child.Text, state))
+			// Preserve spacing like in paragraph renderer
+			text := child.Text
+			if !state.WithinCode {
+				// Normalize internal whitespace while preserving leading/trailing spaces
+				text = br.normalizeInternalWhitespace(text)
+			}
+			result.WriteString(text)
 		} else {
 			// Handle inline elements
 			tag := strings.ToLower(child.Tag)
@@ -414,6 +457,54 @@ func (br *BlockquoteRenderer) extractTextContent(node *tree.TextNode) string {
 	}
 
 	return strings.Join(parts, " ")
+}
+
+// normalizeInternalWhitespace normalizes internal whitespace while preserving leading/trailing spaces.
+func (br *BlockquoteRenderer) normalizeInternalWhitespace(text string) string {
+	if text == "" {
+		return text
+	}
+
+	// Check if text starts or ends with whitespace
+	hasLeadingSpace := len(text) > 0 && (text[0] == ' ' || text[0] == '\t' || text[0] == '\n')
+	hasTrailingSpace := len(text) > 0 && (text[len(text)-1] == ' ' || text[len(text)-1] == '\t' || text[len(text)-1] == '\n')
+
+	// Normalize internal whitespace
+	normalized := strings.Join(strings.Fields(text), " ")
+
+	// Restore leading/trailing spaces if they existed
+	if hasLeadingSpace && normalized != "" {
+		normalized = " " + normalized
+	}
+	if hasTrailingSpace && normalized != "" {
+		normalized = normalized + " "
+	}
+
+	return normalized
+}
+
+// normalizeInternalWhitespace normalizes internal whitespace while preserving leading/trailing spaces.
+func (pr *ParagraphRenderer) normalizeInternalWhitespace(text string) string {
+	if text == "" {
+		return text
+	}
+
+	// Check if text starts or ends with whitespace
+	hasLeadingSpace := len(text) > 0 && (text[0] == ' ' || text[0] == '\t' || text[0] == '\n')
+	hasTrailingSpace := len(text) > 0 && (text[len(text)-1] == ' ' || text[len(text)-1] == '\t' || text[len(text)-1] == '\n')
+
+	// Normalize internal whitespace
+	normalized := strings.Join(strings.Fields(text), " ")
+
+	// Restore leading/trailing spaces if they existed
+	if hasLeadingSpace && normalized != "" {
+		normalized = " " + normalized
+	}
+	if hasTrailingSpace && normalized != "" {
+		normalized = normalized + " "
+	}
+
+	return normalized
 }
 
 // CodeBlockRenderer handles pre/code elements

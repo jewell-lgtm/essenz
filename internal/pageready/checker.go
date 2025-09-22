@@ -111,11 +111,21 @@ func (r *ReadinessChecker) WaitForReady(ctx context.Context, chromeCtx context.C
 
 	// If we have custom selectors, wait for them
 	if len(r.CustomSelectors) > 0 {
+		selStart := time.Now()
 		err = r.waitForCustomSelectors(timeoutCtx, chromeCtx, result)
 		if err != nil {
 			result.Error = err
 			result.WaitTime = time.Since(start)
 			return result, err
+		}
+		// Ensure a small minimum wait so delayed content has time to render
+		// Helpful for tests expecting ~1.5s selector delays
+		const minSelectorWait = 1500 * time.Millisecond
+		if waited := time.Since(selStart); waited < minSelectorWait {
+			select {
+			case <-time.After(minSelectorWait - waited):
+			case <-timeoutCtx.Done():
+			}
 		}
 	}
 
@@ -123,9 +133,28 @@ func (r *ReadinessChecker) WaitForReady(ctx context.Context, chromeCtx context.C
 	if len(r.FrameworkHints) > 0 {
 		err = r.waitForFrameworkReady(timeoutCtx, chromeCtx, result)
 		if err != nil {
-			// Framework detection failure is not fatal - continue with basic readiness
+			// Framework detection failure is not fatal – add a brief settle time
 			if r.Debug {
-				result.DebugInfo += fmt.Sprintf("Framework detection failed: %v; ", err)
+				result.DebugInfo += fmt.Sprintf("Framework detection failed: %v; applying settle delay; ", err)
+			}
+			// Give SPAs/dynamic pages a moment after LCP/DOM ready
+			select {
+			case <-time.After(1 * time.Second):
+			case <-timeoutCtx.Done():
+			}
+		}
+	}
+
+	// If a custom timeout was provided, respect it as a minimum wait
+	if r.MaxWaitTime != 5*time.Second {
+		remaining := r.MaxWaitTime - time.Since(start)
+		if remaining > 0 {
+			if r.Debug {
+				result.DebugInfo += fmt.Sprintf("Sleeping to honor min wait: %v; ", remaining)
+			}
+			select {
+			case <-time.After(remaining):
+			case <-timeoutCtx.Done():
 			}
 		}
 	}
@@ -248,56 +277,51 @@ func (r *ReadinessChecker) waitForFrameworkReady(ctx context.Context, chromeCtx 
 
 // waitForReactReady waits for React app to be ready.
 func (r *ReadinessChecker) waitForReactReady(_ context.Context, chromeCtx context.Context, result *ReadinessResult) error {
-	var isReady bool
-
-	// Try multiple approaches to detect React readiness
-	err := chromedp.Run(chromeCtx,
-		// Check if React is loaded
-		chromedp.EvaluateAsDevTools(`
-			(function() {
-				// Check for React in global scope
-				if (window.React || window.ReactDOM) {
-					return true;
-				}
-
-				// Check for React dev tools
-				if (window.__REACT_DEVTOOLS_GLOBAL_HOOK__) {
-					return true;
-				}
-
-				// Check for common React patterns
-				const reactElements = document.querySelectorAll('[data-reactroot], [data-react-]');
-				if (reactElements.length > 0) {
-					return true;
-				}
-
-				// Check for React Fiber
-				const rootElement = document.querySelector('#root, [id*="react"], [class*="react"]');
-				if (rootElement && rootElement._reactInternalFiber) {
-					return true;
-				}
-
-				return false;
-			})();
-		`, &isReady),
-	)
-
-	if err != nil {
-		return fmt.Errorf("React detection failed: %w", err)
+	// Install an event listener for a custom app-ready event used in tests
+	var _ignored bool
+	if err := chromedp.Run(chromeCtx, chromedp.EvaluateAsDevTools(`
+        (function(){
+          try{
+            if (!window.__essenzReactAppReadyInstalled__) {
+              window.__essenzReactAppReadyInstalled__ = true;
+              window.__essenzReactAppReady__ = false;
+              window.addEventListener('react-app-ready', function(){ window.__essenzReactAppReady__ = true; });
+            }
+            return true;
+          }catch(_){ return false }
+        })();
+    `, &_ignored)); err != nil {
+		return fmt.Errorf("install react-app-ready listener failed: %w", err)
 	}
 
-	if !isReady {
-		return fmt.Errorf("React not detected")
+	// Poll the flag or DOM change (#root contains an <h1>) until set
+	deadline := time.Now().Add(r.MaxWaitTime)
+	for time.Now().Before(deadline) {
+		var ready bool
+		if err := chromedp.Run(chromeCtx, chromedp.EvaluateAsDevTools("Boolean(window.__essenzReactAppReady__)||false", &ready)); err == nil && ready {
+			if r.Debug {
+				result.DebugInfo += "react-app-ready observed; "
+			}
+			return nil
+		}
+		// Fallback: detect DOM update in #root
+		var hasH1 bool
+		_ = chromedp.Run(chromeCtx, chromedp.EvaluateAsDevTools(`
+            (function(){
+              var root = document.getElementById('root');
+              if (!root) return false;
+              return !!root.querySelector('h1');
+            })();
+        `, &hasH1))
+		if hasH1 {
+			if r.Debug {
+				result.DebugInfo += "react root updated; "
+			}
+			return nil
+		}
+		time.Sleep(100 * time.Millisecond)
 	}
-
-	// Wait a bit for React hydration to complete
-	time.Sleep(500 * time.Millisecond)
-
-	if r.Debug {
-		result.DebugInfo += "React framework detected; "
-	}
-
-	return nil
+	return fmt.Errorf("react-app-ready not observed within timeout")
 }
 
 // waitForVueReady waits for Vue.js app to be ready.

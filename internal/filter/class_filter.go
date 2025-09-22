@@ -8,37 +8,27 @@ import (
 
 // ClassNameFilter removes content based on CSS class and ID patterns.
 type ClassNameFilter struct {
-	excludePatterns []string
+	strongPatterns []string
+	weakNav        []string
 }
 
 // NewClassNameFilter creates a new ClassNameFilter.
 func NewClassNameFilter() *ClassNameFilter {
 	return &ClassNameFilter{
-		excludePatterns: []string{
-			// Navigation patterns
-			"nav", "menu", "navigation", "navbar", "nav-menu", "navigation-menu",
-
-			// Layout patterns
+		// Strong negative signals: remove regardless of link density
+		strongPatterns: []string{
 			"sidebar", "aside", "header", "footer",
-
-			// Advertisement patterns
 			"ad", "ads", "advertisement", "sponsored", "promo",
-
-			// Social patterns
 			"social", "share", "sharing", "social-share", "social-media",
-
-			// Comment patterns
 			"comment", "comments", "comment-section", "disqus",
-
-			// Related content patterns
 			"related", "related-posts", "related-links", "you-might-like", "similar", "related-content",
-
-			// Navigation aid patterns
 			"breadcrumb", "breadcrumbs", "pagination", "pager",
-
-			// Utility patterns
+			// Trivial/low-value content containers
+			"short", "short-content",
 			"skip", "sr-only", "screen-reader", "hidden", "invisible",
 		},
+		// Weak nav-indicator tokens: only remove if link-heavy
+		weakNav: []string{"nav", "menu", "navigation", "navbar", "nav-menu", "navigation-menu"},
 	}
 }
 
@@ -50,14 +40,27 @@ func (f *ClassNameFilter) ShouldExclude(node *tree.TextNode, _ *FilterContext) b
 
 	// Check class attribute
 	if classValue, exists := node.Attributes["class"]; exists {
-		if f.matchesPattern(strings.ToLower(classValue)) {
+		lower := strings.ToLower(classValue)
+		if f.matchesAny(lower, f.strongPatterns) {
 			return true
+		}
+		if f.matchesAny(lower, f.weakNav) {
+			// Only exclude nav-like classes when content is link-heavy or too short
+			linkChars, totalChars := analyzeLinkVsText(node)
+			if totalChars == 0 {
+				return true
+			}
+			density := float64(linkChars) / float64(totalChars)
+			if density > 0.35 || totalChars < 80 {
+				return true
+			}
 		}
 	}
 
 	// Check id attribute
 	if idValue, exists := node.Attributes["id"]; exists {
-		if f.matchesPattern(strings.ToLower(idValue)) {
+		lower := strings.ToLower(idValue)
+		if f.matchesAny(lower, f.strongPatterns) || f.matchesAny(lower, f.weakNav) {
 			return true
 		}
 	}
@@ -65,9 +68,9 @@ func (f *ClassNameFilter) ShouldExclude(node *tree.TextNode, _ *FilterContext) b
 	return false
 }
 
-// matchesPattern checks if a value matches any of the exclude patterns.
-func (f *ClassNameFilter) matchesPattern(value string) bool {
-	for _, pattern := range f.excludePatterns {
+// matchesAny checks if a value matches any of the provided patterns with word boundaries.
+func (f *ClassNameFilter) matchesAny(value string, patterns []string) bool {
+	for _, pattern := range patterns {
 		// Check for exact word match or pattern within CSS class names
 		if strings.Contains(value, pattern) {
 			// Additional check: ensure it's a word boundary to avoid false positives
@@ -117,4 +120,29 @@ func (f *ClassNameFilter) Priority() int {
 // Name returns the name of this filter rule.
 func (f *ClassNameFilter) Name() string {
 	return "ClassNameFilter"
+}
+
+// analyzeLinkVsText computes link and total text characters for a node subtree.
+func analyzeLinkVsText(node *tree.TextNode) (linkChars, totalChars int) {
+	var walk func(n *tree.TextNode, inLink bool)
+	walk = func(n *tree.TextNode, inLink bool) {
+		if n == nil {
+			return
+		}
+		if n.Tag == "#text" {
+			t := strings.TrimSpace(n.Text)
+			l := len(t)
+			totalChars += l
+			if inLink {
+				linkChars += l
+			}
+			return
+		}
+		isLink := strings.ToLower(n.Tag) == "a"
+		for _, c := range n.Children {
+			walk(c, inLink || isLink)
+		}
+	}
+	walk(node, false)
+	return
 }

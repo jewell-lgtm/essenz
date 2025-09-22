@@ -132,17 +132,21 @@ func (d *VideoDetector) Extract(node *tree.TextNode) []MediaElement {
 	description := "video"
 	if videoURL != "" {
 		// Extract filename for description
+		filename := videoURL
 		if lastSlash := strings.LastIndex(videoURL, "/"); lastSlash != -1 {
-			filename := videoURL[lastSlash+1:]
-			if lastDot := strings.LastIndex(filename, "."); lastDot != -1 {
-				name := filename[:lastDot]
+			filename = videoURL[lastSlash+1:]
+		}
+		if lastDot := strings.LastIndex(filename, "."); lastDot != -1 {
+			name := filename[:lastDot]
+			if name != "" {
 				description = strings.ReplaceAll(name, "-", " ")
 				description = strings.ReplaceAll(description, "_", " ")
 			}
 		}
 	}
 
-	if videoFormat != "" {
+	// Don't add format info if we have a meaningful description from filename
+	if description == "video" && videoFormat != "" {
 		formatParts := strings.Split(videoFormat, "/")
 		if len(formatParts) > 1 {
 			description += " (" + strings.ToUpper(formatParts[1]) + " format)"
@@ -276,7 +280,7 @@ func (d *SocialEmbedDetector) Extract(node *tree.TextNode) []MediaElement {
 	element.Description = content
 	element.Alternative = content
 	if attribution != "" {
-		element.Alternative += "\n\n— " + attribution + " on " + platform
+		element.Alternative += "\n— " + attribution + " on " + platform
 	}
 
 	return []MediaElement{element}
@@ -418,4 +422,51 @@ func (d *InteractiveMediaDetector) getNodeText(node *tree.TextNode) string {
 // Priority returns the priority of this detector.
 func (d *InteractiveMediaDetector) Priority() int {
 	return 60
+}
+
+// FigureDetector handles figure elements containing media.
+type FigureDetector struct {
+	imageDetector *ImageDetector
+	videoDetector *VideoDetector
+}
+
+// NewFigureDetector creates a new FigureDetector.
+func NewFigureDetector() *FigureDetector {
+	return &FigureDetector{
+		imageDetector: NewImageDetector(),
+		videoDetector: NewVideoDetector(),
+	}
+}
+
+// CanHandle checks if this detector can handle the given node.
+func (d *FigureDetector) CanHandle(node *tree.TextNode) bool {
+	if node == nil {
+		return false
+	}
+	return strings.ToLower(node.Tag) == "figure"
+}
+
+// Extract extracts media information from figure elements.
+func (d *FigureDetector) Extract(node *tree.TextNode) []MediaElement {
+	var elements []MediaElement
+
+	// Look for media elements within the figure
+	for _, child := range node.Children {
+		// Try image detector first
+		if d.imageDetector.CanHandle(child) {
+			childElements := d.imageDetector.Extract(child)
+			elements = append(elements, childElements...)
+		} else if d.videoDetector.CanHandle(child) {
+			// Try video detector
+			childElements := d.videoDetector.Extract(child)
+			elements = append(elements, childElements...)
+		}
+	}
+
+	return elements
+}
+
+// Priority returns the priority of this detector.
+func (d *FigureDetector) Priority() int {
+	return 110 // Higher than image/video detectors to handle figures first
 }

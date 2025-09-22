@@ -15,7 +15,12 @@ build:
 
 # Run tests
 test:
-	go test -v ./...
+    go test -v ./...
+
+# Run tests in sandboxed environments (local caches and skipping env-dependent specs)
+test-sandbox:
+    mkdir -p .gocache
+    ESSENZ_SANDBOX=1 GOCACHE=$(PWD)/.gocache go test -v ./...
 
 # Run linter
 lint:
