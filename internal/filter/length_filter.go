@@ -60,17 +60,17 @@ func (f *LengthFilter) isStructuralElement(node *tree.TextNode) bool {
 		"main":    true,
 		"article": true,
 		"section": true,
-		"div":     true, // Don't filter divs directly, check their content instead
-		"header":  true, // These might be filtered by other rules, but not by length
-		"footer":  true,
-		"nav":     true,
-		"aside":   true,
-		"h1":      true,
-		"h2":      true,
-		"h3":      true,
-		"h4":      true,
-		"h5":      true,
-		"h6":      true,
+		// Intentionally allow filtering <div> blocks based on length
+		"header": true, // These might be filtered by other rules, but not by length
+		"footer": true,
+		"nav":    true,
+		"aside":  true,
+		"h1":     true,
+		"h2":     true,
+		"h3":     true,
+		"h4":     true,
+		"h5":     true,
+		"h6":     true,
 	}
 
 	tagName := strings.ToLower(node.Tag)

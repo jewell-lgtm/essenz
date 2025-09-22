@@ -36,6 +36,10 @@ Thumbs.db
 # Project specific
 sz
 /essenz
+/main
+.bin/
+.gocache/
+.gomodcache/
 dist/
 build/
 *.log

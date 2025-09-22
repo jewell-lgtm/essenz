@@ -329,11 +329,14 @@ func TestDOMReadyEventsWithRealWebsites(t *testing.T) {
 // Helper function to build the binary for testing
 func buildBinary(t *testing.T) string {
 	// Build the sz binary from project root
-	cmd := exec.Command("go", "build", "-o", "/tmp/sz-dom-ready-test", "./cmd/essenz")
+	_ = os.MkdirAll(".bin", 0o755)
+	out := "./.bin/sz-dom-ready-test"
+	runOut := "../.bin/sz-dom-ready-test"
+	cmd := exec.Command("go", "build", "-o", out, "./cmd/essenz")
 	// Set working directory to project root (assuming we're running tests from project root)
 	cmd.Dir = ".."
 	err := cmd.Run()
 	require.NoError(t, err, "Failed to build binary for testing")
 
-	return "/tmp/sz-dom-ready-test"
+	return runOut
 }

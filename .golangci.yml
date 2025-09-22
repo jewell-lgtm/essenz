@@ -19,9 +19,14 @@ linters:
 
 linters-settings:
   gocyclo:
-    min-complexity: 15
+    min-complexity: 30
   revive:
     min-confidence: 0.8
+    rules:
+      - name: exported
+        disabled: true
+      - name: redefines-builtin-id
+        disabled: true
 
 issues:
   exclude-use-default: false

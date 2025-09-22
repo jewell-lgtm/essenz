@@ -19,7 +19,7 @@ type Extractor struct {
 // New creates a new content extractor with default settings.
 func New() *Extractor {
 	return &Extractor{
-		minContentLength:   100,
+		minContentLength:   20,
 		preserveFormatting: true,
 	}
 }
@@ -70,6 +70,13 @@ func (e *Extractor) findMainContent(n *html.Node) *html.Node {
 
 	bestNode := e.findBestContentNode(n, contentSelectors)
 	if bestNode != nil {
+		// If a leaf-like node was chosen (e.g., paragraph or heading), prefer its parent container
+		switch bestNode.Data {
+		case "p", "h1", "h2", "h3", "h4", "h5", "h6":
+			if bestNode.Parent != nil {
+				return bestNode.Parent
+			}
+		}
 		return bestNode
 	}
 
@@ -108,10 +115,12 @@ func (e *Extractor) scoreNode(n *html.Node, selectors []string) int {
 	switch n.Data {
 	case "article", "main", "section":
 		score += 25
-	case "div", "p":
-		score += 5
+	case "div":
+		score += 3
+	case "p":
+		score += 20
 	case "h1", "h2", "h3", "h4", "h5", "h6":
-		score += 10
+		score += 5
 	}
 
 	// Check attributes for content indicators

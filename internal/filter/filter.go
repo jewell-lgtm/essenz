@@ -26,7 +26,7 @@ type FilterConfig struct {
 
 // FilterRule defines an interface for content filtering rules.
 type FilterRule interface {
-	ShouldExclude(node *tree.TextNode, context *FilterContext) bool
+	ShouldExclude(node *tree.TextNode, ctx *FilterContext) bool
 	Priority() int
 	Name() string
 }
@@ -204,7 +204,39 @@ func (cf *ContentFilter) filterChildren(ctx context.Context, node *tree.TextNode
 
 	// Update node's children
 	node.Children = filteredChildren
+
+	// After filtering children, prune trivially short containers (non-whitelisted)
+	if node.Tag != "#text" && !cf.isWhitelisted(node) {
+		// Only consider generic containers
+		tag := strings.ToLower(node.Tag)
+		if tag == "div" || tag == "span" {
+			if total := totalTextLength(node); total < maxInt(cf.config.MinContentLength, 20) {
+				return nil
+			}
+		}
+	}
 	return node
+}
+
+func totalTextLength(node *tree.TextNode) int {
+	if node == nil {
+		return 0
+	}
+	if node.Tag == "#text" {
+		return len(strings.TrimSpace(node.Text))
+	}
+	sum := 0
+	for _, c := range node.Children {
+		sum += totalTextLength(c)
+	}
+	return sum
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 // isWhitelisted checks if a node is in the whitelist.
@@ -223,11 +255,14 @@ func (cf *ContentFilter) isNodeWhitelisted(node *tree.TextNode) bool {
 	// Check tag-based whitelist
 	for _, selector := range cf.config.PreserveWhitelist {
 		if strings.HasPrefix(selector, ".") {
-			// CSS class selector
-			className := strings.TrimPrefix(selector, ".")
+			// CSS class selector: match space-separated class tokens (CSS semantics)
+			className := strings.ToLower(strings.TrimPrefix(selector, "."))
 			if classValue, exists := node.Attributes["class"]; exists {
-				if strings.Contains(classValue, className) {
-					return true
+				tokens := strings.Fields(strings.ToLower(classValue))
+				for _, t := range tokens {
+					if t == className {
+						return true
+					}
 				}
 			}
 		} else {
@@ -254,13 +289,56 @@ func (cf *ContentFilter) isWithinWhitelistedContainer(node *tree.TextNode) bool 
 
 // shouldExcludeByHighPriorityRules checks if a node should be excluded by high-priority rules
 // that can override whitelist protection.
-func (cf *ContentFilter) shouldExcludeByHighPriorityRules(node *tree.TextNode, filterCtx *FilterContext, _ bool) bool {
+func (cf *ContentFilter) shouldExcludeByHighPriorityRules(node *tree.TextNode, filterCtx *FilterContext, isWhitelisted bool) bool {
+	// If whitelisted, only drop hard-blocked tags or obvious noise classes;
+	// otherwise preserve and do not apply other high-priority rules (like nav tag).
+	if isWhitelisted {
+		switch strings.ToLower(node.Tag) {
+		case "script", "style", "noscript":
+			if cf.config.DebugMode {
+				fmt.Printf("DEBUG: Dropping hard-blocked tag inside whitelist: %s\n", node.Tag)
+			}
+			return true
+		}
+		// Also drop well-known noise classes even inside whitelisted containers
+		if classValue, ok := node.Attributes["class"]; ok {
+			lower := strings.ToLower(classValue)
+			noisy := []string{"related", "advertisement", "ads", "promo", "sponsored", "social", "share", "breadcrumb", "pagination", "comments", "comment"}
+			for _, tok := range noisy {
+				if containsClassToken(lower, tok) {
+					if cf.config.DebugMode {
+						fmt.Printf("DEBUG: Excluding noisy class '%s' inside whitelist on %s\n", tok, node.Tag)
+					}
+					return true
+				}
+			}
+		}
+		// Preserve other whitelisted nodes from further high-priority checks
+		return false
+	}
 	for _, rule := range cf.rules {
 		if rule.Priority() >= 80 {
 			if rule.ShouldExclude(node, filterCtx) {
 				if cf.config.DebugMode {
 					fmt.Printf("DEBUG: High-priority rule %s excluded node: %s\n", rule.Name(), node.Tag)
 				}
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// containsClassToken checks if the class attribute contains a token (split by space, '-', '_', '.')
+func containsClassToken(classValue, token string) bool {
+	if classValue == "" || token == "" {
+		return false
+	}
+	seps := []string{" ", "-", "_", "."}
+	for _, sep := range seps {
+		parts := strings.Split(classValue, sep)
+		for _, p := range parts {
+			if p == token {
 				return true
 			}
 		}
