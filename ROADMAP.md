@@ -1,154 +1,127 @@
-# essenz Feature Roadmap
+# sz (essenz) Feature Roadmap
 
-This roadmap defines the complete development path for essenz, organized into testable features. Each feature corresponds to one high-level executable specification that defines the expected end-to-end behavior.
+This roadmap reflects the current implementation status and future development plans for sz, organized into completed and planned features.
 
-## Phase 1: Foundation (Core CLI + Basic Fetching)
+## ✅ Phase 1: Core Content Extraction (COMPLETED)
 
-### ✅ F1: Basic CLI Structure
-**Status**: IMPLEMENTED
-**Spec**: `specs/cli_spec_test.go`
-- `sz` shows help by default
-- `sz version` displays version information
-- `sz help` shows usage information
+### ✅ F1: DOM Ready Event System
+**Status**: IMPLEMENTED ✅
+**Spec**: `specs/dom_ready_events_spec_test.go`
+- DOM readiness detection with JavaScript framework support
+- LCP (Largest Contentful Paint) based waiting
+- Configurable timeouts and fallback strategies
+- Chrome automation integration
 
-### ✅ F2: Simple HTTP/File Fetching
-**Status**: IMPLEMENTED
-**Spec**: `specs/fetch_spec_test.go`
-- `sz fetch https://example.com` retrieves and prints web content
-- `sz fetch /path/to/file.html` reads and prints local file content
-- Error handling for invalid URLs and missing files
+### ✅ F2: Text Node Tree Builder
+**Status**: IMPLEMENTED ✅
+**Spec**: `specs/text_node_tree_builder_spec_test.go`
+- Bottom-up content tree from actual text nodes
+- Hierarchical structure preservation
+- Dynamic content handling
+- Semantic context maintenance
 
-## Phase 2: Chrome Integration (Browser Automation)
+### ✅ F3: Content Filter System
+**Status**: IMPLEMENTED ✅
+**Spec**: `specs/content_filter_spec_test.go`
+- Rule-based filtering for navigation, ads, boilerplate
+- CSS class pattern analysis
+- Content density evaluation
+- Whitelist preservation for important elements
 
-### 🔄 F3: Chrome Daemon Management
-**Status**: NEXT UP
-**Spec**: `specs/daemon_spec_test.go` *(to be created)*
-- Chrome daemon starts on first browser operation
-- Multiple sz commands reuse the same Chrome instance
-- Daemon shuts down gracefully when not needed
-- Daemon restarts automatically if crashed
+### ✅ F4: Image and Media Handler
+**Status**: IMPLEMENTED ✅
+**Spec**: `specs/image_media_handler_spec_test.go`
+- Media detection and meaningful replacement
+- Alt text and caption extraction
+- Context-aware description generation
+- Multiple media type support
 
-### 🔄 F4: JavaScript-Heavy Page Rendering
-**Status**: PLANNED
-**Spec**: `specs/chrome_fetch_spec_test.go` *(to be created)*
-- `sz fetch https://spa-site.com` renders JavaScript before extraction
-- Wait strategies for dynamic content loading
-- Fallback to simple HTTP for static sites
-- Timeout handling for slow-loading pages
+### ✅ F5: Markdown Tree Renderer
+**Status**: IMPLEMENTED ✅
+**Spec**: `specs/markdown_tree_renderer_spec_test.go`
+- Clean, well-formatted markdown output
+- Hierarchical rendering with proper spacing
+- Configurable emphasis and list styles
+- Quality assurance and validation
 
-## Phase 3: Content Intelligence (Extraction + Processing)
+### ✅ F6: TL;DR Summarizer
+**Status**: IMPLEMENTED ✅
+**Spec**: `specs/tldr_summarizer_spec_test.go`
+- LLM-powered content summarization
+- OpenAI and custom API endpoint support
+- Multiple summary length options
+- Secure API key management
 
-### 🔄 F5: Smart Content Extraction
-**Status**: PLANNED
-**Spec**: `specs/extraction_spec_test.go` *(to be created)*
-- Extract main article content from complex web pages
-- Remove navigation, ads, and clutter automatically
-- Preserve important text structure and headings
-- Handle various content layouts and CMS patterns
+### ✅ Additional Core Features
+- **Chrome Daemon Management**: Persistent Chrome process with connection pooling
+- **CLI Structure**: Complete Cobra-based CLI with version, fetch, tldr commands
+- **Configuration System**: Flag-based configuration with environment variable support
 
-### 🔄 F6: Content Importance Scoring
-**Status**: PLANNED
-**Spec**: `specs/importance_spec_test.go` *(to be created)*
-- Reorder content blocks by semantic importance
-- Key information appears first in output
-- Supporting details follow main content
-- Consistent scoring across different page types
+## 🚧 Phase 2: Interactive Browser Mode (SPECS READY)
 
-## Phase 4: Output Formatting (Clean Presentation)
+### 🆕 F7: Footer with Page Statistics
+**Status**: SPECS READY 📋
+**Spec**: `specs/features/F7-footer-stats.spec.md`
+- `--footer` flag for statistics display
+- Page metrics (source, size, processing time)
+- Eszett (ß) branding in pink color
+- Pastel color scheme foundation
 
-### 🔄 F7: Markdown Rendering
-**Status**: PLANNED
-**Spec**: `specs/markdown_spec_test.go` *(to be created)*
-- Clean, readable markdown output by default
-- Proper heading hierarchy preservation
-- Link formatting and preservation
-- Code block and formatting retention
+### 🆕 F8: Links Extraction and Display
+**Status**: SPECS READY 📋
+**Spec**: `specs/features/F8-links-extraction.spec.md`
+- Smart link extraction and prioritization
+- Character code assignment (a-z, aa-zz)
+- Footer links section with visual hierarchy
+- Link filtering and importance scoring
 
-### 🔄 F8: Multiple Output Formats
-**Status**: PLANNED
-**Spec**: `specs/output_formats_spec_test.go` *(to be created)*
-- `sz fetch --format=json` outputs structured data
-- `sz fetch --format=text` provides plain text
-- `sz fetch --format=html` gives cleaned HTML
-- Format-specific optimizations and metadata
+### 🆕 F9: Interactive TUI with Bubble Tea
+**Status**: SPECS READY 📋
+**Spec**: `specs/features/F9-interactive-tui.spec.md`
+- `--interactive` flag for TUI mode
+- Scrollable viewport with vim-like navigation
+- Status bar with position indicators
+- Consistent pastel color scheme application
 
-## Phase 5: Advanced Features (Performance + UX)
+### 🆕 F10: Link Navigation in TUI
+**Status**: SPECS READY 📋
+**Spec**: `specs/features/F10-link-navigation.spec.md`
+- Links overlay with keyboard toggle
+- Character code navigation system
+- Navigation history and back button
+- Loading states and error handling
 
-### 🔄 F9: Content Summarization
-**Status**: PLANNED
-**Spec**: `specs/summarization_spec_test.go` *(to be created)*
-- `sz fetch --summarize` provides article summary
-- Key points extraction from long content
-- TL;DR generation for quick consumption
-- Configurable summary length
+## 🔮 Phase 3: Future Enhancements (PLANNED)
 
-### 🔄 F10: Caching System
-**Status**: PLANNED
-**Spec**: `specs/caching_spec_test.go` *(to be created)*
-- `sz fetch --cache-dir=/path` enables persistent caching
-- Cached responses for repeated requests
-- Cache invalidation and freshness checking
-- Performance improvements for common use cases
+### 📋 F11: Advanced Configuration
+- YAML configuration file support
+- Custom color schemes and themes
+- Advanced filtering rules
+- User-defined shortcuts
 
-### 🔄 F11: Wait Strategies
-**Status**: PLANNED
-**Spec**: `specs/wait_strategies_spec_test.go` *(to be created)*
-- `sz fetch --wait-for=".content"` waits for specific selectors
-- `sz fetch --wait-idle=2s` waits for network idle
-- `sz fetch --timeout=60s` custom timeout handling
-- Reliable handling of complex JavaScript applications
-
-## Phase 6: User Experience (Polish + Usability)
-
-### 🔄 F12: Configuration System
-**Status**: PLANNED
-**Spec**: `specs/config_spec_test.go` *(to be created)*
-- YAML configuration file support (~/.config/essenz/config.yaml)
-- Environment variable overrides (ESSENZ_CHROME_PATH, etc.)
-- Command-line flag precedence over config
-- Config validation and helpful error messages
-
-### 🔄 F13: Interactive TUI Mode
-**Status**: PLANNED
-**Spec**: `specs/tui_spec_test.go` *(to be created)*
-- `sz --tui` launches terminal browser interface
-- URL bar, navigation, and content display
-- Keyboard shortcuts for common operations
-- Bookmark management and history
-
-### 🔄 F14: Debug and Monitoring
-**Status**: PLANNED
-**Spec**: `specs/debug_spec_test.go` *(to be created)*
-- `sz fetch --debug` provides detailed operation logs
-- Performance metrics and timing information
-- Chrome process monitoring and health checks
-- Troubleshooting information for failed extractions
-
-## Phase 7: Performance & Reliability (Production Ready)
-
-### 🔄 F15: Performance Optimization
-**Status**: PLANNED
-**Spec**: `specs/performance_spec_test.go` *(to be created)*
-- Sub-second response time for cached content
-- Memory usage stays below defined limits
-- Chrome process resource management
+### 📋 F12: Performance Optimization
+- Content caching system
+- Memory usage optimization
 - Concurrent request handling
+- Response time improvements
 
-### 🔄 F16: Error Recovery
-**Status**: PLANNED
-**Spec**: `specs/error_recovery_spec_test.go` *(to be created)*
-- Graceful degradation when Chrome is unavailable
-- Network failure retry logic
-- Helpful error messages for common issues
-- System resource exhaustion handling
+### 📋 F13: Search and Discovery
+- In-content search functionality (`/` key in TUI)
+- Bookmark management system
+- History and favorites
+- Content tagging and organization
 
-### 🔄 F17: Cross-Platform Support
-**Status**: PLANNED
-**Spec**: `specs/cross_platform_spec_test.go` *(to be created)*
-- Full functionality on macOS, Linux, Windows
-- Platform-specific Chrome detection
-- Path handling across operating systems
-- Installation and setup processes
+### 📋 F14: Extended Output Formats
+- JSON structured output
+- Plain text formatting
+- HTML cleaned output
+- Custom format templates
+
+### 📋 F15: Integration Features
+- Plugin system for custom processors
+- Webhook support for automation
+- API mode for programmatic access
+- Export to external services
 
 ## Implementation Strategy
 
