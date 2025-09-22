@@ -4,6 +4,12 @@ Get the content of any web page as clean, readable Markdown. Optionally ask an L
 
 Why “sz”? It’s short for essenz — the essence of a page.
 
+## Features
+
+- Skips cookie banners and many soft paywall overlays
+- Handles JavaScript-heavy pages and SPA dynamic content
+- Uses Google Chrome for rendering when needed, or direct HTTP fetch for static pages
+
 ## Philosophy
 
 - Do one thing well: extract what matters from web pages
@@ -32,6 +38,14 @@ Prefer the original HTML? Use raw mode:
 ```bash
 sz --raw https://example.com
 ```
+
+## How It Works
+
+- Render: Starts or reuses a lightweight Google Chrome daemon to load the page, run JavaScript, and wait for content readiness.
+- Extract: Builds a clean text-node tree and filters boilerplate (nav, ads, cookie overlays) to focus on primary content.
+- Rank: Scores blocks using simple heuristics (tag weight, length, link density, position) to surface what matters first.
+- Render Markdown: Converts the result to readable Markdown and prints to stdout (or `--raw` to output original HTML).
+- Optional TL;DR: `sz tldr` sends only the distilled content to your configured LLM for a concise summary.
 
 ## TL;DR Summaries (optional LLM)
 
