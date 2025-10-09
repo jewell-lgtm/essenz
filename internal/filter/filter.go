@@ -70,6 +70,7 @@ func NewContentFilter() *ContentFilter {
 	}
 
 	// Add default filter rules
+	filter.AddRule(NewContentRegionFilter()) // NEW: Prioritize identified content regions
 	filter.AddRule(NewSemanticTagFilter())
 	filter.AddRule(NewClassNameFilter())
 	filter.AddRule(NewLinkDensityFilter(0.3, 5)) // Balanced: 30% max link density, 5 min words

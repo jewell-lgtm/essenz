@@ -171,7 +171,7 @@ Examples:
 		if contentFilter {
 			// Build tree first
 			treeBuilder := tree.NewTreeBuilder().
-				WithFilterNavigation(false). // Don't use tree builder filtering, use content filter instead
+				WithFilterNavigation(false). // Let semantic extractor handle filtering
 				WithPreserveAttributes(true) // Preserve attributes for filtering decisions
 
 			root, err := treeBuilder.BuildTree(cmd.Context(), content)
@@ -180,47 +180,46 @@ Examples:
 				os.Exit(1)
 			}
 
-			// Apply media handling first to preserve meaningful images before filtering
-			if mediaHandler {
-				mediaHandler := media.NewMediaHandler().
-					WithIncludeDecorative(includeDecorative)
+			// Apply semantic content extraction first for better content selection
+			semanticExtractor := tree.NewSemanticExtractor()
+			extractedContent := semanticExtractor.Extract(root)
+			if extractedContent != "" {
+				content = extractedContent
+			} else {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Warning: Semantic extraction produced no content, using original content\n")
+			}
 
-				err := mediaHandler.ProcessMediaInTree(cmd.Context(), root)
+			// If markdown rendering is requested, rebuild tree with extracted content for rendering
+			if markdownRenderer {
+				root, err = treeBuilder.BuildTree(cmd.Context(), content)
 				if err != nil {
-					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error processing media elements: %v\n", err)
+					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error rebuilding tree for markdown rendering: %v\n", err)
 					os.Exit(1)
 				}
-			}
 
-			// Apply content filtering after media handling
-			contentFilterer := filter.NewContentFilter().
-				WithAggressiveMode(aggressiveFiltering)
+				// Apply media handling to the semantically filtered content
+				if mediaHandler {
+					mediaHandler := media.NewMediaHandler().
+						WithIncludeDecorative(includeDecorative)
 
-			if preserveSelector != "" {
-				contentFilterer = contentFilterer.WithPreserveSelector(preserveSelector)
-			}
+					err := mediaHandler.ProcessMediaInTree(cmd.Context(), root)
+					if err != nil {
+						_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error processing media elements: %v\n", err)
+						os.Exit(1)
+					}
+				}
 
-			filtered, err := contentFilterer.FilterTree(cmd.Context(), root)
-			if err != nil {
-				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error applying content filter: %v\n", err)
-				os.Exit(1)
-			}
-
-			// Apply markdown rendering if requested
-			if markdownRenderer {
+				// Render markdown
 				renderer := markdown.NewTreeRenderer().
 					WithEmphasisStyle(emphasisStyle).
 					WithListStyle(listStyle)
 
-				markdownContent, err := renderer.RenderTree(cmd.Context(), filtered)
+				markdownContent, err := renderer.RenderTree(cmd.Context(), root)
 				if err != nil {
 					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error rendering markdown: %v\n", err)
 					os.Exit(1)
 				}
 				content = markdownContent
-			} else {
-				// Convert filtered tree back to readable text
-				content = treeBuilder.ToText(filtered)
 			}
 
 			// Skip reader view processing when content filter is enabled
@@ -241,7 +240,22 @@ Examples:
 				os.Exit(1)
 			}
 
-			// Apply media handling
+			// Apply semantic content extraction first
+			semanticExtractor := tree.NewSemanticExtractor()
+			extractedContent := semanticExtractor.Extract(root)
+			if extractedContent != "" {
+				content = extractedContent
+				// Rebuild tree with semantically extracted content for media processing
+				root, err = treeBuilder.BuildTree(cmd.Context(), content)
+				if err != nil {
+					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error rebuilding tree for media handling: %v\n", err)
+					os.Exit(1)
+				}
+			} else {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Warning: Semantic extraction produced no content, using original content\n")
+			}
+
+			// Apply media handling to semantically filtered content
 			mediaHandler := media.NewMediaHandler().
 				WithIncludeDecorative(includeDecorative)
 
@@ -277,7 +291,7 @@ Examples:
 		if markdownRenderer {
 			// Build tree first
 			treeBuilder := tree.NewTreeBuilder().
-				WithFilterNavigation(false).
+				WithFilterNavigation(false). // Let semantic extractor handle filtering
 				WithPreserveAttributes(true)
 
 			root, err := treeBuilder.BuildTree(cmd.Context(), content)
@@ -286,7 +300,22 @@ Examples:
 				os.Exit(1)
 			}
 
-			// Apply markdown rendering
+			// Apply semantic content extraction first
+			semanticExtractor := tree.NewSemanticExtractor()
+			extractedContent := semanticExtractor.Extract(root)
+			if extractedContent != "" {
+				content = extractedContent
+				// Rebuild tree with semantically extracted content for markdown rendering
+				root, err = treeBuilder.BuildTree(cmd.Context(), content)
+				if err != nil {
+					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error rebuilding tree for markdown rendering: %v\n", err)
+					os.Exit(1)
+				}
+			} else {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Warning: Semantic extraction produced no content, using original content\n")
+			}
+
+			// Apply markdown rendering to semantically filtered content
 			renderer := markdown.NewTreeRenderer().
 				WithEmphasisStyle(emphasisStyle).
 				WithListStyle(listStyle)
@@ -301,15 +330,25 @@ Examples:
 			_, _ = fmt.Fprint(cmd.OutOrStdout(), markdownContent)
 			return
 		}
-		// Apply reader view processing by default, unless --raw flag is used
+		// Apply semantic content extraction by default, unless --raw flag is used
 		if !rawOutput {
-			ext := extractor.New()
-			markdown, err := ext.ExtractContent(content)
+			// Build tree for semantic extraction
+			treeBuilder := tree.NewTreeBuilder().
+				WithFilterNavigation(false). // Let semantic extractor handle filtering
+				WithPreserveAttributes(true) // Preserve attributes for extraction decisions
+
+			root, err := treeBuilder.BuildTree(cmd.Context(), content)
 			if err != nil {
-				// Fallback to raw content on extraction error
-				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Warning: Reader view extraction failed, showing raw content: %v\n", err)
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Warning: Tree building failed, showing raw content: %v\n", err)
 			} else {
-				content = markdown
+				// Apply semantic hierarchy-based extraction
+				semanticExtractor := tree.NewSemanticExtractor()
+				extractedContent := semanticExtractor.Extract(root)
+				if extractedContent != "" {
+					content = extractedContent
+				} else {
+					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Warning: Semantic extraction produced no content, showing raw content\n")
+				}
 			}
 		}
 
@@ -498,7 +537,22 @@ Examples:
 				os.Exit(1)
 			}
 
-			// Apply media handling
+			// Apply semantic content extraction first
+			semanticExtractor := tree.NewSemanticExtractor()
+			extractedContent := semanticExtractor.Extract(root)
+			if extractedContent != "" {
+				content = extractedContent
+				// Rebuild tree with semantically extracted content for media processing
+				root, err = treeBuilder.BuildTree(cmd.Context(), content)
+				if err != nil {
+					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error rebuilding tree for media handling: %v\n", err)
+					os.Exit(1)
+				}
+			} else {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Warning: Semantic extraction produced no content, using original content\n")
+			}
+
+			// Apply media handling to semantically filtered content
 			mediaHandler := media.NewMediaHandler().
 				WithIncludeDecorative(includeDecorative)
 
@@ -899,37 +953,19 @@ func extractContentWithPipeline(ctx context.Context, target string) (string, err
 		return "", fmt.Errorf("failed to build content tree: %w", err)
 	}
 
-	// Step 3: F3 - Apply content filtering
-	contentFilter := filter.NewContentFilter().
-		WithConfig(filter.FilterConfig{
-			AggressiveMode: true, // Use aggressive filtering for cleaner summaries
-		})
+	// Step 3: F3 - Apply semantic content extraction
+	semanticExtractor := tree.NewSemanticExtractor()
 
-	root, err = contentFilter.FilterTree(ctx, root)
-	if err != nil {
-		return "", fmt.Errorf("failed to filter content: %w", err)
+	// Extract content using semantic hierarchy (h1s first, then h2s, then remaining content)
+	extractedContent := semanticExtractor.Extract(root)
+	if extractedContent == "" {
+		return "", fmt.Errorf("semantic extraction produced no content")
 	}
 
-	// Step 4: F4 - Process media elements
-	mediaHandler := media.NewMediaHandler().
-		WithIncludeDecorative(false) // Exclude decorative images for summaries
-
-	err = mediaHandler.ProcessMediaInTree(ctx, root)
-	if err != nil {
-		return "", fmt.Errorf("failed to process media elements: %w", err)
-	}
-
-	// Step 5: F5 - Convert to clean markdown
-	renderer := markdown.NewTreeRenderer().
-		WithEmphasisStyle("asterisk").
-		WithListStyle("dash")
-
-	markdownContent, err := renderer.RenderTree(ctx, root)
-	if err != nil {
-		return "", fmt.Errorf("failed to render markdown: %w", err)
-	}
-
-	return markdownContent, nil
+	// Since semantic extractor returns text, we need to convert back to tree for media processing
+	// For now, return the extracted content directly and skip media processing for semantic pipeline
+	// TODO: Re-enable F4 (media processing) and F5 (markdown rendering) once we can convert text back to tree
+	return extractedContent, nil
 }
 
 func main() {

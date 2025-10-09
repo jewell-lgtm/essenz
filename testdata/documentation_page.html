@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Getting Started with React Hooks - React Documentation</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Learn how to use React Hooks to add state and lifecycle features to functional components">
+</head>
+<body>
+    <header class="docs-header">
+        <nav class="main-nav">
+            <div class="nav-brand">
+                <a href="/">React Docs</a>
+                <span class="version">v18.2.0</span>
+            </div>
+            <div class="nav-search">
+                <input type="search" placeholder="Search docs..." />
+            </div>
+            <ul class="nav-links">
+                <li><a href="/tutorial">Tutorial</a></li>
+                <li><a href="/reference">API Reference</a></li>
+                <li><a href="/community">Community</a></li>
+                <li><a href="/blog">Blog</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="docs-layout">
+        <aside class="sidebar">
+            <nav class="docs-nav">
+                <div class="nav-section">
+                    <h3>Getting Started</h3>
+                    <ul>
+                        <li><a href="/installation">Installation</a></li>
+                        <li><a href="/create-react-app">Create React App</a></li>
+                        <li><a href="/thinking-in-react">Thinking in React</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <h3>Main Concepts</h3>
+                    <ul>
+                        <li><a href="/components">Components and JSX</a></li>
+                        <li><a href="/props">Props</a></li>
+                        <li><a href="/state">State and Lifecycle</a></li>
+                        <li><a href="/events">Handling Events</a></li>
+                        <li><a href="/conditional-rendering">Conditional Rendering</a></li>
+                        <li><a href="/lists-and-keys">Lists and Keys</a></li>
+                        <li><a href="/forms">Forms</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <h3>Hooks</h3>
+                    <ul>
+                        <li><a href="/hooks-intro">Introducing Hooks</a></li>
+                        <li><a href="/hooks-state" class="active">Using the State Hook</a></li>
+                        <li><a href="/hooks-effect">Using the Effect Hook</a></li>
+                        <li><a href="/hooks-rules">Rules of Hooks</a></li>
+                        <li><a href="/hooks-custom">Building Your Own Hooks</a></li>
+                        <li><a href="/hooks-reference">Hooks API Reference</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <h3>Advanced Guides</h3>
+                    <ul>
+                        <li><a href="/context">Context</a></li>
+                        <li><a href="/refs">Refs and the DOM</a></li>
+                        <li><a href="/performance">Performance</a></li>
+                        <li><a href="/testing">Testing</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="docs-content">
+            <article class="doc-article">
+                <header class="article-header">
+                    <h1>Using the State Hook</h1>
+                    <p class="article-meta">
+                        <span class="reading-time">8 min read</span>
+                        <span class="last-updated">Last updated: March 15, 2024</span>
+                    </p>
+                </header>
+
+                <div class="article-content">
+                    <p class="lead">Hooks are a new addition in React 16.8. They let you use state and other React features without writing a class. This page describes the APIs for the built-in Hooks in React.</p>
+
+                    <div class="callout info">
+                        <h4>Prerequisites</h4>
+                        <p>This page assumes you're familiar with React components and JSX. If you need a refresher, we recommend reading <a href="/components">Components and JSX</a> first.</p>
+                    </div>
+
+                    <h2>What's a Hook?</h2>
+
+                    <p>A Hook is a special function that lets you "hook into" React features. For example, <code>useState</code> is a Hook that lets you add React state to function components. We'll learn other Hooks later.</p>
+
+                    <h2>When would I use a Hook?</h2>
+
+                    <p>If you write a function component and realize you need to add some state to it, previously you had to convert it to a class. Now you can use a Hook inside the existing function component.</p>
+
+                    <div class="callout warning">
+                        <h4>Note</h4>
+                        <p>There are some special rules about where you can and can't use Hooks within a component. We'll learn them in <a href="/hooks-rules">Rules of Hooks</a>.</p>
+                    </div>
+
+                    <h2>Declaring a State Variable</h2>
+
+                    <p>In a class, we initialize the <code>count</code> state to <code>0</code> by setting <code>this.state</code> to <code>{count: 0}</code> in the constructor:</p>
+
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">JavaScript</span>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <pre><code class="language-javascript">class Example extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      count: 0
+    };
+  }
+
+  render() {
+    return (
+      &lt;div&gt;
+        &lt;p&gt;You clicked {this.state.count} times&lt;/p&gt;
+        &lt;button onClick={() =&gt; this.setState({ count: this.state.count + 1 })}&gt;
+          Click me
+        &lt;/button&gt;
+      &lt;/div&gt;
+    );
+  }
+}</code></pre>
+                    </div>
+
+                    <p>In a function component, we have no <code>this</code>, so we can't assign or read <code>this.state</code>. Instead, we call the <code>useState</code> Hook directly inside our component:</p>
+
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">JavaScript</span>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <pre><code class="language-javascript">import React, { useState } from 'react';
+
+function Example() {
+  // Declare a new state variable, which we'll call "count"
+  const [count, setCount] = useState(0);
+
+  return (
+    &lt;div&gt;
+      &lt;p&gt;You clicked {count} times&lt;/p&gt;
+      &lt;button onClick={() =&gt; setCount(count + 1)}&gt;
+        Click me
+      &lt;/button&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+                    </div>
+
+                    <h3>What does calling useState do?</h3>
+
+                    <p>It declares a "state variable". Our variable is called <code>count</code> but we could call it anything else, like <code>banana</code>. This is a way to "preserve" some values between the function calls — <code>useState</code> is a new way to use the exact same capabilities that <code>this.state</code> provides in a class.</p>
+
+                    <p>Normally, variables "disappear" when the function exits but state variables are preserved by React.</p>
+
+                    <h3>What do we pass to useState as an argument?</h3>
+
+                    <p>The only argument to the <code>useState()</code> Hook is the initial state. Unlike with classes, the state doesn't have to be an object. We can keep a number or a string if that's all we need.</p>
+
+                    <p>In our example, we just want a number for how many times the user clicked, so pass <code>0</code> as initial state for our variable. (If we wanted to store two different values in state, we would call <code>useState()</code> twice.)</p>
+
+                    <h3>What does useState return?</h3>
+
+                    <p>It returns a pair of values: the current state and a function that updates it. This is why we write <code>const [count, setCount] = useState()</code>. This is similar to <code>this.state.count</code> and <code>this.setState</code> in a class, except you get them in a pair.</p>
+
+                    <div class="tip">
+                        <h4>Tip</h4>
+                        <p>If you're not familiar with the syntax we used, we'll come back to it at the bottom of this page.</p>
+                    </div>
+
+                    <h2>Reading State</h2>
+
+                    <p>When we want to display the current count in a class, we read <code>this.state.count</code>:</p>
+
+                    <div class="code-example">
+                        <pre><code class="language-javascript">&lt;p&gt;You clicked {this.state.count} times&lt;/p&gt;</code></pre>
+                    </div>
+
+                    <p>In a function, we can use <code>count</code> directly:</p>
+
+                    <div class="code-example">
+                        <pre><code class="language-javascript">&lt;p&gt;You clicked {count} times&lt;/p&gt;</code></pre>
+                    </div>
+
+                    <h2>Updating State</h2>
+
+                    <p>In a class, we need to call <code>this.setState()</code> to update the <code>count</code> state:</p>
+
+                    <div class="code-example">
+                        <pre><code class="language-javascript">&lt;button onClick={() =&gt; this.setState({ count: this.state.count + 1 })}&gt;
+  Click me
+&lt;/button&gt;</code></pre>
+                    </div>
+
+                    <p>In a function, we already have <code>setCount</code> and <code>count</code> as variables so we don't need <code>this</code>:</p>
+
+                    <div class="code-example">
+                        <pre><code class="language-javascript">&lt;button onClick={() =&gt; setCount(count + 1)}&gt;
+  Click me
+&lt;/button&gt;</code></pre>
+                    </div>
+
+                    <h2>Recap</h2>
+
+                    <p>Let's now <strong>recap what we learned line by line</strong> and check our understanding.</p>
+
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="language">JavaScript</span>
+                            <div class="code-annotations">
+                                <span class="annotation" data-line="1">Import useState Hook</span>
+                                <span class="annotation" data-line="4">Declare state variable</span>
+                                <span class="annotation" data-line="8">Read state</span>
+                                <span class="annotation" data-line="9">Update state</span>
+                            </div>
+                        </div>
+                        <pre><code class="language-javascript"> 1:  import React, { useState } from 'react';
+ 2:
+ 3:  function Example() {
+ 4:    const [count, setCount] = useState(0);
+ 5:
+ 6:    return (
+ 7:      &lt;div&gt;
+ 8:        &lt;p&gt;You clicked {count} times&lt;/p&gt;
+ 9:        &lt;button onClick={() =&gt; setCount(count + 1)}&gt;
+10:         Click me
+11:        &lt;/button&gt;
+12:      &lt;/div&gt;
+13:    );
+14:  }</code></pre>
+                    </div>
+
+                    <ul>
+                        <li><strong>Line 1:</strong> We import the <code>useState</code> Hook from React. It lets us keep local state in a function component.</li>
+                        <li><strong>Line 4:</strong> Inside the <code>Example</code> component, we declare a new state variable by calling the <code>useState</code> Hook. It returns a pair of values, to which we give names. We're calling our variable <code>count</code> because it holds the number of button clicks. We initialize it to zero by passing <code>0</code> as the only <code>useState</code> argument. The second returned item is itself a function. It lets us update the <code>count</code> so we'll name it <code>setCount</code>.</li>
+                        <li><strong>Line 8:</strong> When the user clicks, we call <code>setCount</code> with a new value. React will then re-render the <code>Example</code> component, passing the new <code>count</code> value to it.</li>
+                    </ul>
+
+                    <p>This might seem like a lot to take in at first. Don't rush it! If you're lost in the explanation, look at the code above again and try to read it from top to bottom. We promise that once you try to "forget" how state works in classes, and look at this code with fresh eyes, it will make sense.</p>
+
+                    <h2>Using Multiple State Variables</h2>
+
+                    <p>Declaring state variables as a pair of <code>[something, setSomething]</code> is also handy because it lets us give <em>different</em> names to different state variables if we want to use more than one:</p>
+
+                    <div class="code-example">
+                        <pre><code class="language-javascript">function ExampleWithManyStates() {
+  // Declare multiple state variables!
+  const [age, setAge] = useState(42);
+  const [fruit, setFruit] = useState('banana');
+  const [todos, setTodos] = useState([{ text: 'Learn Hooks' }]);
+  // ...
+}</code></pre>
+                    </div>
+
+                    <p>In the above component, we have <code>age</code>, <code>fruit</code>, and <code>todos</code> as local variables, and we can update them individually:</p>
+
+                    <div class="code-example">
+                        <pre><code class="language-javascript">function handleOrangeClick() {
+  // Similar to this.setState({ fruit: 'orange' })
+  setFruit('orange');
+}</code></pre>
+                    </div>
+
+                    <p>You <strong>don't have to</strong> use many state variables. State variables can hold objects and arrays just fine, so you can still group related data together. However, unlike <code>this.setState</code> in a class, updating a state variable always <em>replaces</em> it instead of merging it.</p>
+
+                    <h2>Next Steps</h2>
+
+                    <p>In this page, we've learned about one of the Hooks provided by React, called <code>useState</code>. We're also sometimes going to refer to it as the "State Hook". It lets us add local state to React function components — which we did for the first time ever!</p>
+
+                    <p>We also learned a little bit more about what Hooks are. Hooks are functions that let you "hook into" React features from function components. Their names always start with <code>use</code>, and there are more Hooks we haven't seen yet.</p>
+
+                    <p><strong>Now let's continue by <a href="/hooks-effect">learning the next Hook: <code>useEffect</code></a>.</strong> It lets you perform side effects in components, and is similar to lifecycle methods in classes.</p>
+                </div>
+
+                <footer class="article-footer">
+                    <div class="article-navigation">
+                        <div class="nav-previous">
+                            <a href="/hooks-intro">← Introducing Hooks</a>
+                        </div>
+                        <div class="nav-next">
+                            <a href="/hooks-effect">Using the Effect Hook →</a>
+                        </div>
+                    </div>
+
+                    <div class="article-feedback">
+                        <h3>Was this page helpful?</h3>
+                        <div class="feedback-buttons">
+                            <button class="feedback-btn positive">👍 Yes</button>
+                            <button class="feedback-btn negative">👎 No</button>
+                        </div>
+                    </div>
+
+                    <div class="edit-page">
+                        <a href="https://github.com/reactjs/reactjs.org/edit/main/content/docs/hooks-state.md" target="_blank">Edit this page on GitHub</a>
+                    </div>
+                </footer>
+            </article>
+        </main>
+
+        <aside class="toc-sidebar">
+            <nav class="table-of-contents">
+                <h3>On this page</h3>
+                <ul>
+                    <li><a href="#whats-a-hook">What's a Hook?</a></li>
+                    <li><a href="#when-would-i-use-a-hook">When would I use a Hook?</a></li>
+                    <li><a href="#declaring-a-state-variable">Declaring a State Variable</a>
+                        <ul>
+                            <li><a href="#what-does-calling-usestate-do">What does calling useState do?</a></li>
+                            <li><a href="#what-do-we-pass-to-usestate">What do we pass to useState?</a></li>
+                            <li><a href="#what-does-usestate-return">What does useState return?</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#reading-state">Reading State</a></li>
+                    <li><a href="#updating-state">Updating State</a></li>
+                    <li><a href="#recap">Recap</a></li>
+                    <li><a href="#using-multiple-state-variables">Using Multiple State Variables</a></li>
+                    <li><a href="#next-steps">Next Steps</a></li>
+                </ul>
+            </nav>
+        </aside>
+    </div>
+
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Docs</h4>
+                <ul>
+                    <li><a href="/installation">Installation</a></li>
+                    <li><a href="/tutorial">Main Concepts</a></li>
+                    <li><a href="/hooks">Hooks</a></li>
+                    <li><a href="/testing">Testing</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Community</h4>
+                <ul>
+                    <li><a href="/stack-overflow">Stack Overflow</a></li>
+                    <li><a href="/discord">Discord Chat</a></li>
+                    <li><a href="/facebook">Facebook</a></li>
+                    <li><a href="/twitter">Twitter</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>More</h4>
+                <ul>
+                    <li><a href="/blog">Blog</a></li>
+                    <li><a href="/acknowledgements">Acknowledgements</a></li>
+                    <li><a href="/versions">React Versions</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>Copyright © 2024 Facebook Inc.</p>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Malformed HTML Test</title>
+<!-- Fixed title tag so content can be parsed -->
+</head>
+<body>
+    <!-- Unclosed div -->
+    <div class="content">
+        <h1>Main Title
+        <!-- Missing closing h1 tag -->
+        <p>Paragraph after unclosed h1.</p>
+
+    <!-- Mismatched tags -->
+    <section>
+        <h2>Section Title</h2>
+        <p>Section content.
+        <!-- Missing closing p tag -->
+    </div>
+    <!-- Should be </section> -->
+
+    <!-- Nested tags incorrectly -->
+    <p>Start paragraph
+        <h2>Heading inside paragraph</h2>
+        Continue paragraph
+    </p>
+
+    <!-- Multiple missing closing tags -->
+    <main>
+        <article>
+            <h1>Another Title</h1>
+            <p>Article content.
+            <!-- Missing closing p, article, main tags -->
+
+    <footer>
+        <p>Footer content</p>
+    </footer>
+
+<!-- Missing closing body and html tags -->
