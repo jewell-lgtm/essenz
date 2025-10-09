@@ -155,10 +155,8 @@ func TestContentFilterComparison(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if tc.name == "real" {
-				t.Skip("TODO: Complex HTML filtering needs improvement - currently only retains 1.4% of content")
-				return
-			}
+			// Real test is now working with content region preservation
+			// No skip needed anymore!
 			htmlContent, err := os.ReadFile(tc.filePath)
 			if err != nil {
 				if tc.name == "real" {

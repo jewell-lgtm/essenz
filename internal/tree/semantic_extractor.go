@@ -32,7 +32,23 @@ func (se *SemanticExtractor) Extract(root *TextNode) string {
 
 	var extractedContent []string
 
-	// Step 2: Extract content following semantic hierarchy
+	// Step 2: Check if there are identified content regions
+	// If so, extract from those regions (they're already marked as high-value content)
+	contentRegions := se.findContentRegions(filtered)
+	if len(contentRegions) > 0 {
+		// Extract content from identified content regions (e.g., article tags, main content divs)
+		for _, region := range contentRegions {
+			if content := se.extractTextContent(region); content != "" {
+				extractedContent = append(extractedContent, content)
+			}
+		}
+		// If we got content from regions, return it
+		if len(extractedContent) > 0 {
+			return strings.Join(extractedContent, "\n\n")
+		}
+	}
+
+	// Step 3: Fallback to heading-based extraction if no content regions found
 	// First, find and extract all h1 subtrees with their siblings
 	remainingTree := filtered
 	for {
@@ -56,7 +72,7 @@ func (se *SemanticExtractor) Extract(root *TextNode) string {
 		remainingTree = newTree
 	}
 
-	// Step 3: Extract all h2 subtrees with their siblings from remaining content
+	// Step 4: Extract all h2 subtrees with their siblings from remaining content
 	for {
 		h2Subtree, siblings, newTree := se.extractNextH2WithSiblings(remainingTree)
 		if h2Subtree == nil {
@@ -78,12 +94,34 @@ func (se *SemanticExtractor) Extract(root *TextNode) string {
 		remainingTree = newTree
 	}
 
-	// Step 4: Extract any remaining content in document order
+	// Step 5: Extract any remaining content in document order
 	if remainingContent := se.extractRemainingContent(remainingTree); remainingContent != "" {
 		extractedContent = append(extractedContent, remainingContent)
 	}
 
 	return strings.Join(extractedContent, "\n\n")
+}
+
+// findContentRegions finds all nodes marked as content regions in the tree
+func (se *SemanticExtractor) findContentRegions(root *TextNode) []*TextNode {
+	var regions []*TextNode
+	if root == nil {
+		return regions
+	}
+
+	// Check if this node is a content region
+	if root.IsContentRegion {
+		regions = append(regions, root)
+		// Don't recurse into children - this region contains everything
+		return regions
+	}
+
+	// Recursively search children
+	for _, child := range root.Children {
+		regions = append(regions, se.findContentRegions(child)...)
+	}
+
+	return regions
 }
 
 // filterTree removes presentational and navigational content
@@ -132,6 +170,16 @@ func (se *SemanticExtractor) filterTree(root *TextNode) *TextNode {
 
 // shouldFilterNode determines if a node should be filtered out
 func (se *SemanticExtractor) shouldFilterNode(node *TextNode) bool {
+	// NEVER filter content regions - they're identified as high-value content
+	if node.IsContentRegion {
+		return false
+	}
+
+	// NEVER filter nodes that contain content regions
+	if se.hasContentRegionDescendants(node) {
+		return false
+	}
+
 	tag := strings.ToLower(node.Tag)
 
 	// Always filter these tags
@@ -157,6 +205,19 @@ func (se *SemanticExtractor) shouldFilterNode(node *TextNode) bool {
 		}
 	}
 
+	return false
+}
+
+// hasContentRegionDescendants checks if a node has any content region descendants
+func (se *SemanticExtractor) hasContentRegionDescendants(node *TextNode) bool {
+	for _, child := range node.Children {
+		if child.IsContentRegion {
+			return true
+		}
+		if se.hasContentRegionDescendants(child) {
+			return true
+		}
+	}
 	return false
 }
 

@@ -248,7 +248,16 @@ func (cf *ContentFilter) isWhitelisted(node *tree.TextNode) bool {
 	}
 
 	// Check if the node is within a whitelisted container
-	return cf.isWithinWhitelistedContainer(node)
+	if cf.isWithinWhitelistedContainer(node) {
+		return true
+	}
+
+	// Check if the node contains whitelisted descendants (to preserve ancestor chain)
+	if cf.hasWhitelistedDescendant(node) {
+		return true
+	}
+
+	return false
 }
 
 // isNodeWhitelisted checks if the specific node matches whitelist selectors.
@@ -285,6 +294,27 @@ func (cf *ContentFilter) isWithinWhitelistedContainer(node *tree.TextNode) bool 
 		}
 		current = current.Parent
 	}
+	return false
+}
+
+// hasWhitelistedDescendant checks if a node has any whitelisted descendants.
+// This ensures we don't filter out ancestor nodes of whitelisted content.
+func (cf *ContentFilter) hasWhitelistedDescendant(node *tree.TextNode) bool {
+	if node == nil {
+		return false
+	}
+
+	for _, child := range node.Children {
+		// Check if child itself is whitelisted
+		if cf.isNodeWhitelisted(child) {
+			return true
+		}
+		// Recursively check child's descendants
+		if cf.hasWhitelistedDescendant(child) {
+			return true
+		}
+	}
+
 	return false
 }
 
