@@ -600,14 +600,20 @@ func (se *SemanticExtractor) findFirstHeading(node *TextNode, headingTag string)
 	return nil
 }
 
-// getSiblings returns the siblings of a node (including the node itself)
+// getSiblings returns the siblings of a node (excluding the node itself)
 func (se *SemanticExtractor) getSiblings(node *TextNode) []*TextNode {
 	if node == nil || node.Parent == nil {
-		return []*TextNode{node}
+		return []*TextNode{}
 	}
 
-	// Return all children of the parent (which includes the node and its siblings)
-	return node.Parent.Children
+	// Return all children of the parent except the node itself
+	var siblings []*TextNode
+	for _, child := range node.Parent.Children {
+		if child != node {
+			siblings = append(siblings, child)
+		}
+	}
+	return siblings
 }
 
 // removeSubtreeAndSiblings removes a subtree and its siblings from the tree
