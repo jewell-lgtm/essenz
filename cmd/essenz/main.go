@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -28,6 +29,7 @@ var version = "0.1.0"
 // Command line flags
 var readerView bool
 var rawOutput bool
+var requestTimeout string
 
 // DOM ready event flags
 var waitForFrameworks bool
@@ -84,9 +86,23 @@ Examples:
 		var content string
 		var err error
 
-		// Check if it looks like a URL (simple heuristic)
-		if strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://") {
-			content, err = fetchURLWithChrome(cmd.Context(), target)
+		// Determine if target is a URL or file path
+		if isURL(target) {
+			// Validate URL format
+			if !isValidURL(target) {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Invalid URL: %s\n", target)
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "URLs must start with http:// or https://\n")
+				os.Exit(1)
+			}
+
+			// Parse request timeout
+			timeout, err := time.ParseDuration(requestTimeout)
+			if err != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Invalid timeout format: %v\n", err)
+				os.Exit(1)
+			}
+
+			content, err = fetchURLWithChrome(cmd.Context(), target, timeout)
 			if err != nil {
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error fetching URL: %v\n", err)
 				os.Exit(1)
@@ -125,7 +141,12 @@ Examples:
 				// If reading failed, fallback to Chrome
 				if err != nil {
 					fileURL := "file://" + target
-					content, err = fetchURLWithChrome(cmd.Context(), fileURL)
+					// Parse timeout
+					timeout, timeoutErr := time.ParseDuration(requestTimeout)
+					if timeoutErr != nil {
+						timeout = 30 * time.Second // Default
+					}
+					content, err = fetchURLWithChrome(cmd.Context(), fileURL, timeout)
 				}
 			} else {
 				// Default path: direct file read
@@ -406,9 +427,23 @@ Examples:
 		var content string
 		var err error
 
-		// Check if it looks like a URL (simple heuristic)
-		if strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://") {
-			content, err = fetchURLWithChrome(cmd.Context(), target)
+		// Determine if target is a URL or file path
+		if isURL(target) {
+			// Validate URL format
+			if !isValidURL(target) {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Invalid URL: %s\n", target)
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "URLs must start with http:// or https://\n")
+				os.Exit(1)
+			}
+
+			// Parse request timeout
+			timeout, err := time.ParseDuration(requestTimeout)
+			if err != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Invalid timeout format: %v\n", err)
+				os.Exit(1)
+			}
+
+			content, err = fetchURLWithChrome(cmd.Context(), target, timeout)
 			if err != nil {
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error fetching URL: %v\n", err)
 				os.Exit(1)
@@ -419,7 +454,12 @@ Examples:
 			if shouldUseChromeForFile() {
 				// Convert file path to file:// URL and process through Chrome
 				fileURL := "file://" + target
-				content, err = fetchURLWithChrome(cmd.Context(), fileURL)
+				// Parse timeout
+				timeout, timeoutErr := time.ParseDuration(requestTimeout)
+				if timeoutErr != nil {
+					timeout = 30 * time.Second // Default
+				}
+				content, err = fetchURLWithChrome(cmd.Context(), fileURL, timeout)
 				if err != nil {
 					// Fallback to direct file reading if Chrome fails
 					content, err = readFile(target)
@@ -742,6 +782,7 @@ func init() {
 
 	// Add flags to root command
 	rootCmd.Flags().BoolVar(&rawOutput, "raw", false, "Output raw HTML without reader view processing")
+	rootCmd.Flags().StringVar(&requestTimeout, "timeout", "30s", "Request timeout duration (e.g., 10s, 1m)")
 	rootCmd.Flags().BoolVar(&waitForFrameworks, "wait-for-frameworks", false, "Enable framework-specific readiness detection (React, Vue, Next.js)")
 	rootCmd.Flags().StringVar(&domReadyTimeout, "dom-ready-timeout", "5s", "Timeout for DOM readiness detection")
 	rootCmd.Flags().StringVar(&waitForSelector, "wait-for-selector", "", "Wait for specific CSS selector to appear before extraction")
@@ -769,6 +810,7 @@ func init() {
 	rootCmd.Flags().StringVar(&listStyle, "list-style", "dash", "List style: 'dash' (-), 'asterisk' (*), or 'plus' (+)")
 	// Add flags to fetch command
 	fetchCmd.Flags().BoolVarP(&readerView, "reader-view", "r", false, "Extract main content and convert to clean markdown")
+	fetchCmd.Flags().StringVar(&requestTimeout, "timeout", "30s", "Request timeout duration (e.g., 10s, 1m)")
 	fetchCmd.Flags().BoolVar(&waitForFrameworks, "wait-for-frameworks", false, "Enable framework-specific readiness detection (React, Vue, Next.js)")
 	fetchCmd.Flags().StringVar(&domReadyTimeout, "dom-ready-timeout", "5s", "Timeout for DOM readiness detection")
 	fetchCmd.Flags().StringVar(&waitForSelector, "wait-for-selector", "", "Wait for specific CSS selector to appear before extraction")
@@ -865,7 +907,11 @@ func createReadinessChecker() (*pageready.ReadinessChecker, error) {
 }
 
 // fetchURLWithChrome fetches content using Chrome browser automation
-func fetchURLWithChrome(ctx context.Context, url string) (string, error) {
+func fetchURLWithChrome(ctx context.Context, url string, timeout time.Duration) (string, error) {
+	// Create context with timeout
+	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	client := browser.NewClient()
 	defer client.Shutdown()
 
@@ -879,8 +925,12 @@ func fetchURLWithChrome(ctx context.Context, url string) (string, error) {
 		client = client.WithReadinessChecker(checker)
 	}
 
-	content, err := client.FetchContent(ctx, url)
+	content, err := client.FetchContent(timeoutCtx, url)
 	if err != nil {
+		// Check if it was a timeout error
+		if timeoutCtx.Err() == context.DeadlineExceeded {
+			return "", fmt.Errorf("request timed out after %v", timeout)
+		}
 		// Fallback to simple HTTP fetch if Chrome fails
 		return fetchURL(url)
 	}
@@ -923,17 +973,23 @@ func extractContentWithPipeline(ctx context.Context, target string) (string, err
 	var content string
 	var err error
 
+	// Parse timeout for the pipeline
+	timeout, err := time.ParseDuration(requestTimeout)
+	if err != nil {
+		timeout = 30 * time.Second // Default
+	}
+
 	// Step 1: Get raw content (URL or file)
 	if strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://") {
 		// Use Chrome for URLs to enable F1-F5 pipeline
-		content, err = fetchURLWithChrome(ctx, target)
+		content, err = fetchURLWithChrome(ctx, target, timeout)
 		if err != nil {
 			return "", fmt.Errorf("failed to fetch URL: %w", err)
 		}
 	} else {
 		// For files, always use Chrome to ensure consistent processing
 		fileURL := "file://" + target
-		content, err = fetchURLWithChrome(ctx, fileURL)
+		content, err = fetchURLWithChrome(ctx, fileURL, timeout)
 		if err != nil {
 			// Fallback to direct file reading if Chrome fails
 			content, err = readFile(target)
@@ -966,6 +1022,52 @@ func extractContentWithPipeline(ctx context.Context, target string) (string, err
 	// For now, return the extracted content directly and skip media processing for semantic pipeline
 	// TODO: Re-enable F4 (media processing) and F5 (markdown rendering) once we can convert text back to tree
 	return extractedContent, nil
+}
+
+// isURL determines if the target string looks like a URL
+func isURL(target string) bool {
+	// Explicit URL protocols
+	if strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://") {
+		return true
+	}
+
+	// Check for other protocols
+	if strings.Contains(target, "://") {
+		return true
+	}
+
+	// If it starts with / or contains /, it's likely a file path
+	if strings.HasPrefix(target, "/") || strings.HasPrefix(target, "./") || strings.HasPrefix(target, "../") {
+		return false
+	}
+
+	// If it contains a dot but no slashes, it might be a domain (like example.com)
+	if strings.Contains(target, ".") && !strings.Contains(target, "/") {
+		return true
+	}
+
+	return false
+}
+
+// isValidURL validates that a URL has proper format
+func isValidURL(target string) bool {
+	// Must start with http:// or https://
+	if !strings.HasPrefix(target, "http://") && !strings.HasPrefix(target, "https://") {
+		return false
+	}
+
+	// Parse URL to validate format
+	parsedURL, err := url.Parse(target)
+	if err != nil {
+		return false
+	}
+
+	// Must have a host
+	if parsedURL.Host == "" {
+		return false
+	}
+
+	return true
 }
 
 func main() {
