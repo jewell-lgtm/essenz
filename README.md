@@ -67,26 +67,33 @@ Advanced flags: `--model`, `--base-url`, `--timeout`. By default, only the disti
 ## Installation
 
 Requirements:
-- Go 1.21+ (for building from source)
 - Chrome/Chromium installed for JavaScript‑heavy sites (falls back to HTTP fetch otherwise)
+- Go 1.24+ (only needed for building from source)
 
-Choose one:
+### Homebrew (Recommended)
 
 ```bash
-# Prebuilt binary (macOS/Linux)
-curl -L "https://github.com/jewell-lgtm/essenz/releases/latest/download/sz-$(uname -s)-$(uname -m)" -o sz
-chmod +x sz && sudo mv sz /usr/local/bin/
+brew tap jewell-lgtm/essenz
+brew install sz
+```
 
-# Go install (installs binary named 'essenz')
-go install github.com/jewell-lgtm/essenz/cmd/essenz@latest
-# Optional: symlink to 'sz'
-sudo ln -sf "$(go env GOPATH)/bin/essenz" /usr/local/bin/sz
+### Other Methods
 
-# From source
+```bash
+# Manual from release
+curl -L https://github.com/jewell-lgtm/essenz/archive/refs/tags/v0.1.0.tar.gz -o essenz-0.1.0.tar.gz
+tar -xzf essenz-0.1.0.tar.gz
+cd essenz-0.1.0
+go build -o sz ./cmd/essenz
+sudo mv sz /usr/local/bin/
+
+# From source (latest development)
 git clone https://github.com/jewell-lgtm/essenz
 cd essenz
 make build && sudo mv sz /usr/local/bin/
 ```
+
+See [INSTALLATION.md](INSTALLATION.md) for detailed installation instructions and troubleshooting.
 
 ## Links
 
