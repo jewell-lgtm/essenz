@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/cdproto/page"
 
 	"github.com/chromedp/chromedp"
@@ -230,6 +231,38 @@ func (s *Server) fetchContentWithContext(ctx context.Context, req Request) (stri
 				_, _ = w.Write(data)
 			}))
 			navigateURL = tempServer.URL
+		}
+	}
+
+	// Set cookies before navigation if provided
+	if len(req.Cookies) > 0 {
+		err := chromedp.Run(timeoutCtx,
+			chromedp.ActionFunc(func(ctx context.Context) error {
+				for _, cookie := range req.Cookies {
+					path := cookie.Path
+					if path == "" {
+						path = "/"
+					}
+					// Use URL-based cookie setting for better compatibility
+					cookieCmd := network.SetCookie(cookie.Name, cookie.Value).
+						WithURL(navigateURL).
+						WithPath(path)
+					// Only set domain if explicitly provided
+					if cookie.Domain != "" {
+						cookieCmd = cookieCmd.WithDomain(cookie.Domain)
+					}
+					if err := cookieCmd.Do(ctx); err != nil {
+						return fmt.Errorf("failed to set cookie %s: %w", cookie.Name, err)
+					}
+				}
+				return nil
+			}),
+		)
+		if err != nil {
+			if tempServer != nil {
+				tempServer.Close()
+			}
+			return "", fmt.Errorf("failed to set cookies: %w", err)
 		}
 	}
 

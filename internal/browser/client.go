@@ -11,6 +11,7 @@ import (
 // Client provides browser operations with automatic daemon management.
 type Client struct {
 	readinessChecker *pageready.ReadinessChecker
+	cookies          []daemon.Cookie
 }
 
 // NewClient creates a new browser client with global daemon management.
@@ -26,13 +27,19 @@ func (c *Client) WithReadinessChecker(checker *pageready.ReadinessChecker) *Clie
 	return c
 }
 
+// WithCookies configures cookies to be set before navigation.
+func (c *Client) WithCookies(cookies []daemon.Cookie) *Client {
+	c.cookies = cookies
+	return c
+}
+
 // FetchContent fetches content from a URL using Chrome rendering via daemon.
 func (c *Client) FetchContent(ctx context.Context, url string) (string, error) {
 	client := daemon.NewDaemonClient()
 
-	// If we have a readiness checker, use enhanced fetch
-	if c.readinessChecker != nil {
-		return client.FetchContentWithReadiness(ctx, url, c.readinessChecker)
+	// If we have cookies or readiness checker, use enhanced fetch
+	if len(c.cookies) > 0 || c.readinessChecker != nil {
+		return client.FetchContentWithCookies(ctx, url, c.cookies, c.readinessChecker)
 	}
 
 	// Otherwise use basic fetch

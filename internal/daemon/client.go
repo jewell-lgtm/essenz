@@ -72,6 +72,16 @@ func (c *Client) FetchContent(_ context.Context, url string) (string, error) {
 
 // FetchContentWithReadiness fetches content via the daemon with DOM readiness detection.
 func (c *Client) FetchContentWithReadiness(_ context.Context, url string, checker *pageready.ReadinessChecker) (string, error) {
+	return c.FetchContentWithOptions(url, nil, checker)
+}
+
+// FetchContentWithCookies fetches content via the daemon with cookies.
+func (c *Client) FetchContentWithCookies(_ context.Context, url string, cookies []Cookie, checker *pageready.ReadinessChecker) (string, error) {
+	return c.FetchContentWithOptions(url, cookies, checker)
+}
+
+// FetchContentWithOptions fetches content via the daemon with optional cookies and readiness detection.
+func (c *Client) FetchContentWithOptions(url string, cookies []Cookie, checker *pageready.ReadinessChecker) (string, error) {
 	// Ensure daemon is running
 	if !IsDaemonRunning() {
 		if err := StartDaemonIfNeeded(); err != nil {
@@ -102,7 +112,7 @@ func (c *Client) FetchContentWithReadiness(_ context.Context, url string, checke
 			Selectors:     checker.CustomSelectors,
 		}
 	}
-	req := Request{Action: "fetch", URL: url, Readiness: spec}
+	req := Request{Action: "fetch", URL: url, Readiness: spec, Cookies: cookies}
 	if err := encoder.Encode(req); err != nil {
 		return "", fmt.Errorf("failed to send request: %w", err)
 	}

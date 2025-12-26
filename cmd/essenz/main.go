@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"os"
 	"strings"
@@ -64,6 +65,9 @@ var tldrModel string
 var tldrSummaryLength string
 var tldrBaseURL string
 var tldrTimeout string
+
+// Cookie flags
+var cookies []string
 var rootCmd = &cobra.Command{
 	Use:   "sz [URL or file path]",
 	Short: "Distill the web into semantic markdown",
@@ -808,8 +812,13 @@ func init() {
 	rootCmd.Flags().BoolVar(&markdownRenderer, "markdown-renderer", false, "Convert content tree to clean, formatted markdown")
 	rootCmd.Flags().StringVar(&emphasisStyle, "emphasis-style", "asterisk", "Emphasis style: 'asterisk' (*) or 'underscore' (_)")
 	rootCmd.Flags().StringVar(&listStyle, "list-style", "dash", "List style: 'dash' (-), 'asterisk' (*), or 'plus' (+)")
+
+	// Cookie flags
+	rootCmd.Flags().StringArrayVar(&cookies, "cookie", []string{}, "Set cookie as name=value (can be repeated)")
+
 	// Add flags to fetch command
 	fetchCmd.Flags().BoolVarP(&readerView, "reader-view", "r", false, "Extract main content and convert to clean markdown")
+	fetchCmd.Flags().BoolVar(&rawOutput, "raw", false, "Output raw HTML without reader view processing")
 	fetchCmd.Flags().StringVar(&requestTimeout, "timeout", "30s", "Request timeout duration (e.g., 10s, 1m)")
 	fetchCmd.Flags().BoolVar(&waitForFrameworks, "wait-for-frameworks", false, "Enable framework-specific readiness detection (React, Vue, Next.js)")
 	fetchCmd.Flags().StringVar(&domReadyTimeout, "dom-ready-timeout", "5s", "Timeout for DOM readiness detection")
@@ -836,6 +845,9 @@ func init() {
 	fetchCmd.Flags().BoolVar(&markdownRenderer, "markdown-renderer", false, "Convert content tree to clean, formatted markdown")
 	fetchCmd.Flags().StringVar(&emphasisStyle, "emphasis-style", "asterisk", "Emphasis style: 'asterisk' (*) or 'underscore' (_)")
 	fetchCmd.Flags().StringVar(&listStyle, "list-style", "dash", "List style: 'dash' (-), 'asterisk' (*), or 'plus' (+)")
+
+	// Cookie flags for fetch command
+	fetchCmd.Flags().StringArrayVar(&cookies, "cookie", []string{}, "Set cookie as name=value (can be repeated)")
 
 	// TL;DR summarizer flags
 	tldrCmd.Flags().StringVar(&tldrAPIKey, "api-key", "", "OpenAI API key (can also use OPENAI_API_KEY env var)")
@@ -925,22 +937,60 @@ func fetchURLWithChrome(ctx context.Context, url string, timeout time.Duration) 
 		client = client.WithReadinessChecker(checker)
 	}
 
+	// Parse and set cookies if provided
+	if len(cookies) > 0 {
+		parsedCookies, err := parseCookies(cookies)
+		if err != nil {
+			return "", err
+		}
+		client = client.WithCookies(parsedCookies)
+	}
+
 	content, err := client.FetchContent(timeoutCtx, url)
 	if err != nil {
 		// Check if it was a timeout error
 		if timeoutCtx.Err() == context.DeadlineExceeded {
 			return "", fmt.Errorf("request timed out after %v", timeout)
 		}
-		// Fallback to simple HTTP fetch if Chrome fails
+		// Fallback to simple HTTP fetch if Chrome fails (with cookies if provided)
+		if len(cookies) > 0 {
+			parsedCookies, parseErr := parseCookies(cookies)
+			if parseErr != nil {
+				return "", parseErr
+			}
+			return fetchURLWithCookies(url, parsedCookies)
+		}
 		return fetchURL(url)
 	}
 
 	return content, nil
 }
 
+// parseCookies converts cookie flag strings to daemon.Cookie structs
+func parseCookies(cookieStrings []string) ([]daemon.Cookie, error) {
+	var result []daemon.Cookie
+	for _, cs := range cookieStrings {
+		parts := strings.SplitN(cs, "=", 2)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid cookie format: %q (expected name=value)", cs)
+		}
+		result = append(result, daemon.Cookie{
+			Name:  strings.TrimSpace(parts[0]),
+			Value: strings.TrimSpace(parts[1]),
+		})
+	}
+	return result, nil
+}
+
 // fetchURL fetches content from an HTTP or HTTPS URL (fallback method)
-func fetchURL(url string) (string, error) {
+func fetchURL(targetURL string) (string, error) {
+	return fetchURLWithCookies(targetURL, nil)
+}
+
+// fetchURLWithCookies fetches content with optional cookies
+func fetchURLWithCookies(targetURL string, daemonCookies []daemon.Cookie) (string, error) {
 	// Create HTTP client with reasonable timeout and TLS config for tests
+	jar, _ := cookiejar.New(nil)
 	client := &http.Client{
 		Timeout: 30 * time.Second,
 		Transport: &http.Transport{
@@ -948,9 +998,26 @@ func fetchURL(url string) (string, error) {
 				InsecureSkipVerify: true, // For test servers with self-signed certs
 			},
 		},
+		Jar: jar,
 	}
 
-	resp, err := client.Get(url)
+	// Add cookies to the jar if provided
+	if len(daemonCookies) > 0 {
+		parsedURL, err := url.Parse(targetURL)
+		if err != nil {
+			return "", fmt.Errorf("invalid URL: %w", err)
+		}
+		var httpCookies []*http.Cookie
+		for _, c := range daemonCookies {
+			httpCookies = append(httpCookies, &http.Cookie{
+				Name:  c.Name,
+				Value: c.Value,
+			})
+		}
+		jar.SetCookies(parsedURL, httpCookies)
+	}
+
+	resp, err := client.Get(targetURL)
 	if err != nil {
 		return "", err
 	}
