@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/jewell-lgtm/essenz/internal/browser"
+	"github.com/jewell-lgtm/essenz/internal/config"
 	"github.com/jewell-lgtm/essenz/internal/daemon"
 	"github.com/jewell-lgtm/essenz/internal/extractor"
 	"github.com/jewell-lgtm/essenz/internal/filter"
@@ -937,13 +938,13 @@ func fetchURLWithChrome(ctx context.Context, url string, timeout time.Duration) 
 		client = client.WithReadinessChecker(checker)
 	}
 
-	// Parse and set cookies if provided
-	if len(cookies) > 0 {
-		parsedCookies, err := parseCookies(cookies)
-		if err != nil {
-			return "", err
-		}
-		client = client.WithCookies(parsedCookies)
+	// Resolve cookies from domain config + CLI flags
+	allCookies, err := resolvedCookies(url)
+	if err != nil {
+		return "", err
+	}
+	if len(allCookies) > 0 {
+		client = client.WithCookies(allCookies)
 	}
 
 	content, err := client.FetchContent(timeoutCtx, url)
@@ -953,12 +954,8 @@ func fetchURLWithChrome(ctx context.Context, url string, timeout time.Duration) 
 			return "", fmt.Errorf("request timed out after %v", timeout)
 		}
 		// Fallback to simple HTTP fetch if Chrome fails (with cookies if provided)
-		if len(cookies) > 0 {
-			parsedCookies, parseErr := parseCookies(cookies)
-			if parseErr != nil {
-				return "", parseErr
-			}
-			return fetchURLWithCookies(url, parsedCookies)
+		if len(allCookies) > 0 {
+			return fetchURLWithCookies(url, allCookies)
 		}
 		return fetchURL(url)
 	}
@@ -980,6 +977,42 @@ func parseCookies(cookieStrings []string) ([]daemon.Cookie, error) {
 		})
 	}
 	return result, nil
+}
+
+// resolvedCookies merges per-domain config cookies with CLI --cookie flags.
+// CLI cookies override config cookies by name.
+func resolvedCookies(targetURL string) ([]daemon.Cookie, error) {
+	store, storeErr := config.New()
+
+	var configCookies []config.CookieConfig
+	if storeErr == nil {
+		configCookies, _ = store.CookiesForURL(targetURL)
+	}
+
+	cliCookies, err := parseCookies(cookies)
+	if err != nil {
+		return nil, err
+	}
+
+	return mergeCookies(configCookies, cliCookies), nil
+}
+
+// mergeCookies combines config cookies with CLI cookies; CLI overrides by name.
+func mergeCookies(cfgCookies []config.CookieConfig, cliCookies []daemon.Cookie) []daemon.Cookie {
+	// Index CLI cookie names for override detection
+	cliNames := make(map[string]bool, len(cliCookies))
+	for _, c := range cliCookies {
+		cliNames[c.Name] = true
+	}
+
+	var result []daemon.Cookie
+	for _, c := range cfgCookies {
+		if !cliNames[c.Name] {
+			result = append(result, daemon.Cookie{Name: c.Name, Value: c.Value})
+		}
+	}
+	result = append(result, cliCookies...)
+	return result
 }
 
 // fetchURL fetches content from an HTTP or HTTPS URL (fallback method)
