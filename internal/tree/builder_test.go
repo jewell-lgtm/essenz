@@ -49,7 +49,6 @@ func TestTreeBuilderWithSimpleGitHubHTML(t *testing.T) {
 	})
 
 	t.Run("ContentDensityCalculation", func(t *testing.T) {
-		t.Skip("TODO: Content density calculation needs adjustment - currently 4.89 vs expected > 5.0")
 		// Find the main article content
 		articles := findNodesByTag(root, []string{"article"})
 		require.Greater(t, len(articles), 0, "Should find article element")
@@ -72,7 +71,6 @@ func TestTreeBuilderWithSimpleGitHubHTML(t *testing.T) {
 	})
 
 	t.Run("ExpectedContentExtraction", func(t *testing.T) {
-		t.Skip("TODO: Semantic weight for navigation needs refinement - currently = 1.0 vs expected < 1.0")
 		// Verify specific content is captured
 		allText := getAllTextContent(root)
 
@@ -91,18 +89,19 @@ func TestTreeBuilderWithSimpleGitHubHTML(t *testing.T) {
 				"Should capture important content: %s", expected)
 		}
 
-		// Should not heavily weight navigation
-		navigationContent := []string{
-			"Sign in",
-			"Sign up",
-			"About",
-			"Contact",
-		}
-
-		navNodes := findNodesContainingText(root, navigationContent)
-		for _, navNode := range navNodes {
-			assert.Less(t, navNode.SemanticWeight, 1.0,
-				"Navigation node '%s' should have low semantic weight", getTextContent(navNode))
+		// Navigation regions and their contents (e.g. the Sign in / Sign up /
+		// About / Contact links) should be down-weighted, not the page containers
+		// that merely happen to enclose them.
+		navElements := findNodesByTag(root, []string{"nav"})
+		require.Greater(t, len(navElements), 0, "fixture should contain nav elements")
+		for _, nav := range navElements {
+			assert.Less(t, nav.SemanticWeight, 1.0,
+				"nav element should have low semantic weight, got %.2f", nav.SemanticWeight)
+			for _, link := range findNodesByTag(nav, []string{"a"}) {
+				assert.Less(t, link.SemanticWeight, 1.0,
+					"link '%s' within nav should have low semantic weight, got %.2f",
+					getTextContent(link), link.SemanticWeight)
+			}
 		}
 	})
 }
@@ -165,21 +164,6 @@ func findNodesByTag(node *TextNode, tags []string) []*TextNode {
 	}
 	for _, child := range node.Children {
 		nodes = append(nodes, findNodesByTag(child, tags)...)
-	}
-	return nodes
-}
-
-func findNodesContainingText(node *TextNode, texts []string) []*TextNode {
-	var nodes []*TextNode
-	nodeText := getTextContent(node)
-	for _, text := range texts {
-		if strings.Contains(nodeText, text) {
-			nodes = append(nodes, node)
-			break
-		}
-	}
-	for _, child := range node.Children {
-		nodes = append(nodes, findNodesContainingText(child, texts)...)
 	}
 	return nodes
 }

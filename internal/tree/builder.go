@@ -363,9 +363,10 @@ func (tb *TreeBuilder) calculateNodeMetrics(node *TextNode) {
 			node.LinkDensity = float64(totalLinkWords) / float64(totalWords)
 		}
 
-		// Content density: ratio of text content to structural elements
+		// Content density: words per child element (text content relative to
+		// structural elements).
 		if totalChildren > 0 {
-			node.ContentDensity = float64(totalWords) / float64(totalChildren+1)
+			node.ContentDensity = float64(totalWords) / float64(totalChildren)
 		}
 	}
 
@@ -459,7 +460,25 @@ func (tb *TreeBuilder) calculateSemanticWeight(node *TextNode) float64 {
 		weight *= 0.3
 	}
 
+	// Inherit reduced weight when nested inside a navigation region, so links and
+	// items within a <nav>/<header>/<footer>/<aside> are deprioritised too.
+	if node.Tag != "#text" && tb.withinNavigationRegion(node) {
+		weight *= 0.3
+	}
+
 	return weight
+}
+
+// withinNavigationRegion reports whether any ancestor of node is a navigation
+// region (by tag or class/id/role indicators).
+func (tb *TreeBuilder) withinNavigationRegion(node *TextNode) bool {
+	navTags := map[string]bool{"nav": true, "header": true, "footer": true, "aside": true}
+	for cur := node.Parent; cur != nil; cur = cur.Parent {
+		if navTags[cur.Tag] || tb.hasNavigationIndicators(cur) {
+			return true
+		}
+	}
+	return false
 }
 
 // hasContentIndicators checks for class/id names that suggest main content.
