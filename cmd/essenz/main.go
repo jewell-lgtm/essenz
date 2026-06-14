@@ -111,7 +111,7 @@ Examples:
 				os.Exit(1)
 			}
 
-			content, err = fetchURLWithChrome(cmd.Context(), target, timeout)
+			content, err = fetchURLWithEngine(cmd.Context(), target, timeout, resolveEngine(cmd))
 			if err != nil {
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error fetching URL: %v\n", err)
 				os.Exit(1)
@@ -792,6 +792,7 @@ func init() {
 	// Add flags to root command
 	rootCmd.Flags().BoolVar(&rawOutput, "raw", false, "Output raw HTML without reader view processing")
 	rootCmd.Flags().StringVar(&requestTimeout, "timeout", "30s", "Request timeout duration (e.g., 10s, 1m)")
+	rootCmd.Flags().StringVar(&engineName, "engine", "auto", "Fetch engine for URLs: auto (escalate http->lightpanda->chrome), http, lightpanda, chrome")
 	rootCmd.Flags().BoolVar(&waitForFrameworks, "wait-for-frameworks", false, "Enable framework-specific readiness detection (React, Vue, Next.js)")
 	rootCmd.Flags().StringVar(&domReadyTimeout, "dom-ready-timeout", "5s", "Timeout for DOM readiness detection")
 	rootCmd.Flags().StringVar(&waitForSelector, "wait-for-selector", "", "Wait for specific CSS selector to appear before extraction")
