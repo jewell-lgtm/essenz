@@ -452,15 +452,7 @@ Examples:
 				os.Exit(1)
 			}
 
-			// Resolve engine selection: --engine flag, else ESSENZ_ENGINE env.
-			engineSel := engineName
-			if !cmd.Flags().Changed("engine") {
-				if env := os.Getenv("ESSENZ_ENGINE"); env != "" {
-					engineSel = env
-				}
-			}
-
-			content, err = fetchURLWithEngine(cmd.Context(), target, timeout, engineSel)
+			content, err = fetchURLWithEngine(cmd.Context(), target, timeout, resolveEngine(cmd))
 			if err != nil {
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error fetching URL: %v\n", err)
 				os.Exit(1)
@@ -703,7 +695,7 @@ Examples:
 		target := args[0]
 
 		// Use F1-F5 pipeline to extract and clean content
-		content, err := extractContentWithPipeline(cmd.Context(), target)
+		content, err := extractContentWithPipeline(cmd.Context(), target, resolveEngine(cmd))
 		if err != nil {
 			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error extracting content: %v\n", err)
 			os.Exit(1)
@@ -869,6 +861,7 @@ func init() {
 	tldrCmd.Flags().StringVar(&tldrSummaryLength, "summary-length", "medium", "Summary length: short, medium, or long")
 	tldrCmd.Flags().StringVar(&tldrBaseURL, "base-url", "", "Custom OpenAI API base URL")
 	tldrCmd.Flags().StringVar(&tldrTimeout, "timeout", "60s", "Request timeout duration")
+	tldrCmd.Flags().StringVar(&engineName, "engine", "auto", "Fetch engine for URLs: auto, http, lightpanda, chrome")
 
 	// Add all commands to root
 	rootCmd.AddCommand(versionCmd)
@@ -1005,6 +998,18 @@ func fetchURLWithEngine(ctx context.Context, url string, timeout time.Duration, 
 	return res.HTML, nil
 }
 
+// resolveEngine returns the engine selection for a command: the --engine flag if
+// set, else the ESSENZ_ENGINE env var, else the flag default (auto).
+func resolveEngine(cmd *cobra.Command) string {
+	sel := engineName
+	if !cmd.Flags().Changed("engine") {
+		if env := os.Getenv("ESSENZ_ENGINE"); env != "" {
+			sel = env
+		}
+	}
+	return sel
+}
+
 // buildEngine constructs the engine named by sel. The chrome tier is configured
 // with the DOM readiness checker so it (and auto's chrome fallback) honour flags.
 func buildEngine(sel string, checker *pageready.ReadinessChecker) (engine.Engine, error) {
@@ -1138,7 +1143,7 @@ func fetchURLWithCookies(targetURL string, daemonCookies []daemon.Cookie) (strin
 }
 
 // extractContentWithPipeline extracts content using the complete F1-F5 pipeline for TL;DR
-func extractContentWithPipeline(ctx context.Context, target string) (string, error) {
+func extractContentWithPipeline(ctx context.Context, target, engineSel string) (string, error) {
 	var content string
 	var err error
 
@@ -1150,8 +1155,8 @@ func extractContentWithPipeline(ctx context.Context, target string) (string, err
 
 	// Step 1: Get raw content (URL or file)
 	if strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://") {
-		// Use Chrome for URLs to enable F1-F5 pipeline
-		content, err = fetchURLWithChrome(ctx, target, timeout)
+		// Use the selected engine for URLs to enable the F1-F5 pipeline
+		content, err = fetchURLWithEngine(ctx, target, timeout, engineSel)
 		if err != nil {
 			return "", fmt.Errorf("failed to fetch URL: %w", err)
 		}

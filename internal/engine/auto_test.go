@@ -99,6 +99,23 @@ func TestAutoAcceptsLastEngineEvenIfThin(t *testing.T) {
 	assert.Equal(t, "chrome", res.Engine, "last engine is accepted even when thin")
 }
 
+func TestAutoFallsBackToThinResultWhenHeavierEnginesFail(t *testing.T) {
+	// http returns thin JS-dependent content, then the heavier engine errors
+	// (e.g. lightpanda not installed). The thin result should still be returned.
+	auto := NewAutoEngine(
+		&stubEngine{name: "http", res: Result{
+			HTML:   "<div id=app>partial</div>",
+			Raw:    `<html><body><div id=app>partial</div><script>render()</script></body></html>`,
+			Engine: "http",
+		}},
+		&stubEngine{name: "lightpanda", err: errors.New("binary unavailable")},
+	)
+	res, err := auto.Fetch(context.Background(), "http://x", Options{})
+	require.NoError(t, err, "a working thin result should beat failing outright")
+	assert.Equal(t, "http", res.Engine)
+	assert.Contains(t, res.HTML, "partial")
+}
+
 func TestAutoAllFail(t *testing.T) {
 	auto := NewAutoEngine(
 		&stubEngine{name: "http", err: errors.New("e1")},

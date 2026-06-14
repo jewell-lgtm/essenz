@@ -34,6 +34,7 @@ func (e *AutoEngine) Name() string { return "auto" }
 // engine's result is always accepted (nothing heavier remains to try).
 func (e *AutoEngine) Fetch(ctx context.Context, rawURL string, opts Options) (Result, error) {
 	var lastErr error
+	var fallback *Result // best successful-but-thin result so far
 	for i, eng := range e.engines {
 		last := i == len(e.engines)-1
 		res, err := eng.Fetch(ctx, rawURL, opts)
@@ -46,7 +47,15 @@ func (e *AutoEngine) Fetch(ctx context.Context, rawURL string, opts Options) (Re
 			debugf(opts, "[engine:auto] using %s", res.Engine)
 			return res, nil
 		}
+		// Thin but usable: remember it in case heavier engines are unavailable.
 		debugf(opts, "[engine:auto] %s output thin, escalating", eng.Name())
+		r := res
+		fallback = &r
+	}
+	// Escalation exhausted: a working thin result beats failing outright.
+	if fallback != nil {
+		debugf(opts, "[engine:auto] escalation exhausted, falling back to %s", fallback.Engine)
+		return *fallback, nil
 	}
 	if lastErr != nil {
 		return Result{}, fmt.Errorf("auto engine: all engines failed; last error: %w", lastErr)
