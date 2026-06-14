@@ -8,7 +8,7 @@ Why “sz”? It’s short for essenz — the essence of a page.
 
 - Skips cookie banners and many soft paywall overlays
 - Handles JavaScript-heavy pages and SPA dynamic content
-- Uses Google Chrome for rendering when needed, or direct HTTP fetch for static pages
+- Tiered fetch engines: plain HTTP + readability for static pages, the lightweight [Lightpanda](https://lightpanda.io) browser for JavaScript, and Google Chrome as a heavy fallback
 
 ## Philosophy
 
@@ -39,9 +39,33 @@ Prefer the original HTML? Use raw mode:
 sz --raw https://example.com
 ```
 
+## Fetch Engines
+
+`sz fetch` chooses how to retrieve a URL with `--engine` (default `auto`):
+
+| Engine | JavaScript | Footprint | Use when |
+|---|---|---|---|
+| `http` | no | tiny | static articles, news, docs |
+| `lightpanda` | yes | ~80 MB | SPAs / JS-rendered content |
+| `chrome` | yes | heavy | sites Lightpanda can't yet render |
+| `auto` | as needed | adaptive | default — escalates http → lightpanda → chrome |
+
+```bash
+sz fetch https://example.com                  # auto (default)
+sz fetch --engine http https://example.com    # force the light path
+sz fetch --engine lightpanda https://app.dev  # force JS rendering
+ESSENZ_ENGINE=chrome sz fetch https://app.dev  # via environment
+```
+
+`auto` starts with the lightest engine and escalates only when a page looks
+JavaScript-dependent, so most pages never spin up a browser.
+
+The Lightpanda binary is downloaded and cached automatically on first use. To use
+your own build, set `ESSENZ_LIGHTPANDA_PATH=/path/to/lightpanda`.
+
 ## How It Works
 
-- Render: Starts or reuses a lightweight Google Chrome daemon to load the page, run JavaScript, and wait for content readiness.
+- Render: Picks a fetch engine (HTTP, Lightpanda, or Chrome) to load the page, run JavaScript if needed, and wait for content readiness.
 - Extract: Builds a clean text-node tree and filters boilerplate (nav, ads, cookie overlays) to focus on primary content.
 - Rank: Scores blocks using simple heuristics (tag weight, length, link density, position) to surface what matters first.
 - Render Markdown: Converts the result to readable Markdown and prints to stdout (or `--raw` to output original HTML).
@@ -67,7 +91,8 @@ Advanced flags: `--model`, `--base-url`, `--timeout`. By default, only the disti
 ## Installation
 
 Requirements:
-- Chrome/Chromium installed for JavaScript‑heavy sites (falls back to HTTP fetch otherwise)
+- Nothing extra for most pages — static pages use a built-in HTTP fetch, and the lightweight Lightpanda browser is auto-downloaded on first use for JavaScript-heavy sites
+- Chrome/Chromium only needed for `--engine chrome` (the heavy fallback)
 - Go 1.24+ (only needed for building from source)
 
 ### Homebrew (Recommended)

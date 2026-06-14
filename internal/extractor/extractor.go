@@ -1,152 +1,68 @@
-// Package extractor provides content extraction functionality for reader view.
+// Package extractor provides content extraction for reader view, powered by
+// go-readability (the same algorithm as Firefox Reader View) for main-content
+// isolation, with a lightweight HTML->markdown renderer on top.
 package extractor
 
 import (
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 
+	readability "github.com/go-shiori/go-readability"
 	"golang.org/x/net/html"
 )
 
 // Extractor handles content extraction from HTML documents.
 type Extractor struct {
-	// Configuration options
-	minContentLength   int
 	preserveFormatting bool
 }
 
 // New creates a new content extractor with default settings.
 func New() *Extractor {
 	return &Extractor{
-		minContentLength:   20,
 		preserveFormatting: true,
 	}
 }
 
-// ExtractContent extracts the main content from HTML and converts it to markdown.
+// ExtractContent isolates the main content from HTML and converts it to markdown.
+// It uses go-readability to find the article body, falling back to the document
+// body for pages readability can't classify (so trivial pages still pass through).
 func (e *Extractor) ExtractContent(htmlContent string) (string, error) {
-	// Parse HTML
+	if article, err := readability.FromReader(strings.NewReader(htmlContent), &url.URL{}); err == nil &&
+		strings.TrimSpace(article.TextContent) != "" {
+		if md := e.renderArticle(article); strings.TrimSpace(md) != "" {
+			return md, nil
+		}
+	}
+	return e.fallback(htmlContent)
+}
+
+// renderArticle converts a readability article to markdown, prepending the title
+// as an H1 when readability split it out of the content.
+func (e *Extractor) renderArticle(article readability.Article) string {
+	doc, err := html.Parse(strings.NewReader(article.Content))
+	if err != nil {
+		return ""
+	}
+	md := e.cleanMarkdown(e.nodeToMarkdown(doc))
+	if title := strings.TrimSpace(article.Title); title != "" && !strings.Contains(md, title) {
+		md = "# " + title + "\n\n" + md
+	}
+	return md
+}
+
+// fallback renders the document body directly for pages readability rejects.
+func (e *Extractor) fallback(htmlContent string) (string, error) {
 	doc, err := html.Parse(strings.NewReader(htmlContent))
 	if err != nil {
 		return "", fmt.Errorf("failed to parse HTML: %w", err)
 	}
-
-	// Find the main content
-	contentNode := e.findMainContent(doc)
-	if contentNode == nil {
-		// Fallback: use the body or entire document
-		if bodyNode := e.findNode(doc, "body"); bodyNode != nil {
-			contentNode = bodyNode
-		} else {
-			contentNode = doc
-		}
+	node := e.findNode(doc, "body")
+	if node == nil {
+		node = doc
 	}
-
-	// Extract text and convert to markdown
-	markdown := e.nodeToMarkdown(contentNode)
-
-	// Clean up the output
-	markdown = e.cleanMarkdown(markdown)
-
-	return markdown, nil
-}
-
-// findMainContent attempts to identify the main content area of the page.
-func (e *Extractor) findMainContent(n *html.Node) *html.Node {
-	// Look for semantic HTML5 elements first
-	if mainNode := e.findNode(n, "main"); mainNode != nil {
-		return mainNode
-	}
-	if articleNode := e.findNode(n, "article"); articleNode != nil {
-		return articleNode
-	}
-
-	// Look for common content containers by class/id
-	contentSelectors := []string{
-		"content", "main-content", "article", "post", "entry",
-		"story", "text", "body-content", "primary",
-	}
-
-	bestNode := e.findBestContentNode(n, contentSelectors)
-	if bestNode != nil {
-		// If a leaf-like node was chosen (e.g., paragraph or heading), prefer its parent container
-		switch bestNode.Data {
-		case "p", "h1", "h2", "h3", "h4", "h5", "h6":
-			if bestNode.Parent != nil {
-				return bestNode.Parent
-			}
-		}
-		return bestNode
-	}
-
-	return nil
-}
-
-// findBestContentNode finds the node with the highest content score.
-func (e *Extractor) findBestContentNode(n *html.Node, selectors []string) *html.Node {
-	var bestNode *html.Node
-	bestScore := 0
-
-	e.walkNodes(n, func(node *html.Node) {
-		if node.Type != html.ElementNode {
-			return
-		}
-
-		score := e.scoreNode(node, selectors)
-		if score > bestScore {
-			bestScore = score
-			bestNode = node
-		}
-	})
-
-	return bestNode
-}
-
-// scoreNode calculates a content score for a node.
-func (e *Extractor) scoreNode(n *html.Node, selectors []string) int {
-	if n.Type != html.ElementNode {
-		return 0
-	}
-
-	score := 0
-
-	// Positive scores for content-like elements
-	switch n.Data {
-	case "article", "main", "section":
-		score += 25
-	case "div":
-		score += 3
-	case "p":
-		score += 20
-	case "h1", "h2", "h3", "h4", "h5", "h6":
-		score += 5
-	}
-
-	// Check attributes for content indicators
-	for _, attr := range n.Attr {
-		if attr.Key == "class" || attr.Key == "id" {
-			value := strings.ToLower(attr.Val)
-			for _, selector := range selectors {
-				if strings.Contains(value, selector) {
-					score += 15
-				}
-			}
-
-			// Negative scores for non-content elements
-			if containsAny(value, []string{"nav", "menu", "sidebar", "footer", "header", "ad", "social", "comment"}) {
-				score -= 25
-			}
-		}
-	}
-
-	// Add text content length bonus
-	textLength := len(strings.TrimSpace(e.getTextContent(n)))
-	if textLength > e.minContentLength {
-		score += textLength / 25 // Bonus points for longer content
-	}
-
-	return score
+	return e.cleanMarkdown(e.nodeToMarkdown(node)), nil
 }
 
 // nodeToMarkdown converts an HTML node tree to markdown.
@@ -154,7 +70,6 @@ func (e *Extractor) nodeToMarkdown(n *html.Node) string {
 	if n == nil {
 		return ""
 	}
-
 	var result strings.Builder
 	e.convertNode(n, &result, 0)
 	return result.String()
@@ -163,9 +78,16 @@ func (e *Extractor) nodeToMarkdown(n *html.Node) string {
 // convertNode recursively converts HTML nodes to markdown.
 func (e *Extractor) convertNode(n *html.Node, result *strings.Builder, depth int) {
 	if n.Type == html.TextNode {
-		text := strings.TrimSpace(n.Data)
-		if text != "" {
+		if text := strings.TrimSpace(n.Data); text != "" {
 			result.WriteString(text)
+		}
+		return
+	}
+
+	// Container nodes (document root) carry no markup themselves; recurse.
+	if n.Type == html.DocumentNode {
+		for child := n.FirstChild; child != nil; child = child.NextSibling {
+			e.convertNode(child, result, depth)
 		}
 		return
 	}
@@ -174,40 +96,43 @@ func (e *Extractor) convertNode(n *html.Node, result *strings.Builder, depth int
 		return
 	}
 
-	// Skip unwanted elements
 	if e.shouldSkipElement(n) {
 		return
 	}
 
-	// Handle opening tags
 	e.writeOpeningTag(n, result)
-
-	// Process children
 	for child := n.FirstChild; child != nil; child = child.NextSibling {
 		e.convertNode(child, result, depth+1)
 	}
-
-	// Handle closing tags
 	e.writeClosingTag(n, result)
 }
 
-// shouldSkipElement determines if an element should be skipped entirely.
+var (
+	tokenSplitRe   = regexp.MustCompile(`[^a-z0-9]+`)
+	boilerplateTok = map[string]bool{
+		"nav": true, "menu": true, "sidebar": true, "footer": true,
+		"header": true, "ad": true, "ads": true, "social": true, "comment": true,
+	}
+)
+
+// shouldSkipElement drops non-content and non-rendering elements. readability
+// already removes most boilerplate; this guards the fallback path too. Class/id
+// matching is token-based to avoid false positives (e.g. "ad" inside
+// "readability-page").
 func (e *Extractor) shouldSkipElement(n *html.Node) bool {
 	switch n.Data {
 	case "nav", "footer", "header", "aside", "script", "style", "noscript":
 		return true
 	}
-
-	// Check for unwanted classes/IDs
 	for _, attr := range n.Attr {
 		if attr.Key == "class" || attr.Key == "id" {
-			value := strings.ToLower(attr.Val)
-			if containsAny(value, []string{"nav", "menu", "sidebar", "footer", "header", "ad", "social", "comment"}) {
-				return true
+			for _, tok := range tokenSplitRe.Split(strings.ToLower(attr.Val), -1) {
+				if boilerplateTok[tok] {
+					return true
+				}
 			}
 		}
 	}
-
 	return false
 }
 
@@ -261,7 +186,6 @@ func (e *Extractor) writeClosingTag(n *html.Node, result *strings.Builder) {
 	case "ul", "ol":
 		result.WriteString("\n")
 	case "a":
-		// Extract link URL
 		href := ""
 		for _, attr := range n.Attr {
 			if attr.Key == "href" {
@@ -291,13 +215,6 @@ func (e *Extractor) findNode(n *html.Node, tagName string) *html.Node {
 	return nil
 }
 
-func (e *Extractor) walkNodes(n *html.Node, fn func(*html.Node)) {
-	fn(n)
-	for child := n.FirstChild; child != nil; child = child.NextSibling {
-		e.walkNodes(child, fn)
-	}
-}
-
 func (e *Extractor) getTextContent(n *html.Node) string {
 	if n.Type == html.TextNode {
 		return n.Data
@@ -314,21 +231,7 @@ func (e *Extractor) hasTextContent(n *html.Node) bool {
 }
 
 func (e *Extractor) cleanMarkdown(markdown string) string {
-	// Remove excessive newlines
 	re := regexp.MustCompile(`\n{3,}`)
 	markdown = re.ReplaceAllString(markdown, "\n\n")
-
-	// Trim leading/trailing whitespace
-	markdown = strings.TrimSpace(markdown)
-
-	return markdown
-}
-
-func containsAny(s string, substrings []string) bool {
-	for _, substr := range substrings {
-		if strings.Contains(s, substr) {
-			return true
-		}
-	}
-	return false
+	return strings.TrimSpace(markdown)
 }

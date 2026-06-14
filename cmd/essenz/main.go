@@ -16,6 +16,7 @@ import (
 	"github.com/jewell-lgtm/essenz/internal/browser"
 	"github.com/jewell-lgtm/essenz/internal/config"
 	"github.com/jewell-lgtm/essenz/internal/daemon"
+	"github.com/jewell-lgtm/essenz/internal/engine"
 	"github.com/jewell-lgtm/essenz/internal/extractor"
 	"github.com/jewell-lgtm/essenz/internal/filter"
 	"github.com/jewell-lgtm/essenz/internal/markdown"
@@ -32,6 +33,9 @@ var version = "0.1.0"
 var readerView bool
 var rawOutput bool
 var requestTimeout string
+
+// Engine selection flag
+var engineName string
 
 // DOM ready event flags
 var waitForFrameworks bool
@@ -448,7 +452,15 @@ Examples:
 				os.Exit(1)
 			}
 
-			content, err = fetchURLWithChrome(cmd.Context(), target, timeout)
+			// Resolve engine selection: --engine flag, else ESSENZ_ENGINE env.
+			engineSel := engineName
+			if !cmd.Flags().Changed("engine") {
+				if env := os.Getenv("ESSENZ_ENGINE"); env != "" {
+					engineSel = env
+				}
+			}
+
+			content, err = fetchURLWithEngine(cmd.Context(), target, timeout, engineSel)
 			if err != nil {
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Error fetching URL: %v\n", err)
 				os.Exit(1)
@@ -821,6 +833,7 @@ func init() {
 	fetchCmd.Flags().BoolVarP(&readerView, "reader-view", "r", false, "Extract main content and convert to clean markdown")
 	fetchCmd.Flags().BoolVar(&rawOutput, "raw", false, "Output raw HTML without reader view processing")
 	fetchCmd.Flags().StringVar(&requestTimeout, "timeout", "30s", "Request timeout duration (e.g., 10s, 1m)")
+	fetchCmd.Flags().StringVar(&engineName, "engine", "auto", "Fetch engine for URLs: auto (escalate http->lightpanda->chrome), http, lightpanda, chrome")
 	fetchCmd.Flags().BoolVar(&waitForFrameworks, "wait-for-frameworks", false, "Enable framework-specific readiness detection (React, Vue, Next.js)")
 	fetchCmd.Flags().StringVar(&domReadyTimeout, "dom-ready-timeout", "5s", "Timeout for DOM readiness detection")
 	fetchCmd.Flags().StringVar(&waitForSelector, "wait-for-selector", "", "Wait for specific CSS selector to appear before extraction")
@@ -961,6 +974,62 @@ func fetchURLWithChrome(ctx context.Context, url string, timeout time.Duration) 
 	}
 
 	return content, nil
+}
+
+// fetchURLWithEngine fetches a URL using the selected engine and returns its HTML.
+func fetchURLWithEngine(ctx context.Context, url string, timeout time.Duration, engineSel string) (string, error) {
+	checker, err := createReadinessChecker()
+	if err != nil {
+		return "", fmt.Errorf("failed to configure DOM readiness: %w", err)
+	}
+
+	eng, err := buildEngine(engineSel, checker)
+	if err != nil {
+		return "", err
+	}
+
+	allCookies, err := resolvedCookies(url)
+	if err != nil {
+		return "", err
+	}
+
+	res, err := eng.Fetch(ctx, url, engine.Options{
+		Cookies:     toEngineCookies(allCookies),
+		Timeout:     timeout,
+		Debug:       debugReadiness,
+		InsecureTLS: true, // matches essenz's long-standing fetch behaviour (self-signed test servers)
+	})
+	if err != nil {
+		return "", err
+	}
+	return res.HTML, nil
+}
+
+// buildEngine constructs the engine named by sel. The chrome tier is configured
+// with the DOM readiness checker so it (and auto's chrome fallback) honour flags.
+func buildEngine(sel string, checker *pageready.ReadinessChecker) (engine.Engine, error) {
+	chrome := &engine.ChromeEngine{Readiness: checker}
+	switch sel {
+	case "auto", "":
+		return engine.NewAutoEngine(engine.NewHTTPEngine(), engine.NewLightpandaEngine(), chrome), nil
+	case "http":
+		return engine.NewHTTPEngine(), nil
+	case "lightpanda":
+		return engine.NewLightpandaEngine(), nil
+	case "chrome":
+		return chrome, nil
+	default:
+		return nil, fmt.Errorf("unknown engine %q (valid: auto, http, lightpanda, chrome)", sel)
+	}
+}
+
+// toEngineCookies converts daemon cookies to the engine's identical type.
+func toEngineCookies(cs []daemon.Cookie) []engine.Cookie {
+	out := make([]engine.Cookie, len(cs))
+	for i, c := range cs {
+		out[i] = engine.Cookie(c)
+	}
+	return out
 }
 
 // parseCookies converts cookie flag strings to daemon.Cookie structs
