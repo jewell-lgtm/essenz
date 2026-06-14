@@ -371,3 +371,50 @@ func (mh *MediaHandler) replaceWithText(node *tree.TextNode, replacement string)
 	node.Tag = "#text"
 	node.Text = replacement
 }
+
+// RenderTreeToText converts a processed text node tree to readable plain text.
+// Unlike TreeBuilder.ToText which produces a tree dump, this extracts human-readable text.
+func RenderTreeToText(root *tree.TextNode) string {
+	var sb strings.Builder
+	renderNodeToText(&sb, root)
+	return strings.TrimSpace(sb.String())
+}
+
+// renderNodeToText recursively renders a node's text content.
+func renderNodeToText(sb *strings.Builder, node *tree.TextNode) {
+	if node == nil {
+		return
+	}
+
+	if node.Tag == "#text" {
+		text := strings.TrimSpace(node.Text)
+		if text != "" {
+			sb.WriteString(text)
+			sb.WriteString("\n")
+		}
+		return
+	}
+
+	// Block-level elements add spacing
+	isBlock := isBlockTag(node.Tag)
+
+	for _, child := range node.Children {
+		renderNodeToText(sb, child)
+	}
+
+	if isBlock {
+		sb.WriteString("\n")
+	}
+}
+
+// isBlockTag returns true for block-level HTML elements.
+func isBlockTag(tag string) bool {
+	switch strings.ToLower(tag) {
+	case "p", "div", "h1", "h2", "h3", "h4", "h5", "h6",
+		"article", "section", "main", "header", "footer",
+		"blockquote", "pre", "ul", "ol", "li", "figure",
+		"table", "tr", "th", "td", "body", "html", "document":
+		return true
+	}
+	return false
+}

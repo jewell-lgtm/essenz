@@ -25,7 +25,7 @@ func TestChromeDaemonManagement(t *testing.T) {
 		cmd := exec.Command(szBinary, "fetch", "https://example.com")
 		output, err := cmd.CombinedOutput()
 		require.NoError(t, err, "First fetch command should succeed")
-		assert.Contains(t, string(output), "<html>", "Should contain HTML content")
+		assert.Contains(t, string(output), "<html", "Should contain HTML content")
 		assert.Contains(t, string(output), "Example Domain", "Should contain expected content from Chrome rendering")
 	})
 

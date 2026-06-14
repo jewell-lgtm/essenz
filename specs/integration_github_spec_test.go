@@ -31,7 +31,7 @@ func TestGitHubRepositoryExtraction(t *testing.T) {
 				"Installation",                       // README section
 				"Quick Start",                        // README section (not "Usage")
 				"sz https://example.com",             // Usage example
-				"go install",                         // Installation instruction
+				"go build",                           // Build-from-source instruction
 			},
 			expectedNotContains: []string{
 				"Sign in",       // GitHub navigation

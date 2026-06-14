@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
@@ -39,6 +40,12 @@ func (e *AutoEngine) Fetch(ctx context.Context, rawURL string, opts Options) (Re
 		last := i == len(e.engines)-1
 		res, err := eng.Fetch(ctx, rawURL, opts)
 		if err != nil {
+			// A definitive HTTP status (404/410/5xx) won't be helped by a heavier
+			// engine — propagate it rather than rendering an error page as content.
+			var se *StatusError
+			if errors.As(err, &se) && definitiveStatus(se.Code) {
+				return Result{}, fmt.Errorf("auto engine: %w", err)
+			}
 			lastErr = err
 			debugf(opts, "[engine:auto] %s failed: %v", eng.Name(), err)
 			continue
@@ -52,15 +59,25 @@ func (e *AutoEngine) Fetch(ctx context.Context, rawURL string, opts Options) (Re
 		r := res
 		fallback = &r
 	}
-	// Escalation exhausted: a working thin result beats failing outright.
-	if fallback != nil {
+	// A working result with real content beats failing outright.
+	if fallback != nil && len([]rune(visibleText(fallback.HTML))) > 0 {
 		debugf(opts, "[engine:auto] escalation exhausted, falling back to %s", fallback.Engine)
 		return *fallback, nil
 	}
 	if lastErr != nil {
 		return Result{}, fmt.Errorf("auto engine: all engines failed; last error: %w", lastErr)
 	}
+	if fallback != nil {
+		return *fallback, nil
+	}
 	return Result{}, fmt.Errorf("auto engine: no engines configured")
+}
+
+// definitiveStatus reports whether an HTTP status is final (escalating to a
+// heavier engine cannot turn it into content). 401/403/429 are excluded since a
+// real browser or cookies may succeed.
+func definitiveStatus(code int) bool {
+	return code == 404 || code == 410 || code >= 500
 }
 
 // sufficient reports whether a result is good enough to accept without
@@ -68,7 +85,11 @@ func (e *AutoEngine) Fetch(ctx context.Context, rawURL string, opts Options) (Re
 // only when the page looks JavaScript-dependent (so genuinely small static pages
 // are not pointlessly handed to a heavier engine).
 func sufficient(res Result) bool {
-	if len([]rune(visibleText(res.HTML))) >= thinTextThreshold {
+	vis := len([]rune(visibleText(res.HTML)))
+	if vis == 0 {
+		return false // empty output is never sufficient
+	}
+	if vis >= thinTextThreshold {
 		return true
 	}
 	probe := res.Raw

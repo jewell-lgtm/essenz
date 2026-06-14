@@ -68,7 +68,7 @@ func (e *HTTPEngine) Fetch(ctx context.Context, rawURL string, opts Options) (Re
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return Result{}, fmt.Errorf("http engine: unexpected status %s", resp.Status)
+		return Result{}, &StatusError{Code: resp.StatusCode, Status: resp.Status}
 	}
 
 	body, err := io.ReadAll(resp.Body)

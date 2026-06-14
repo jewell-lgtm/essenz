@@ -85,6 +85,11 @@ func (e *LightpandaEngine) Fetch(ctx context.Context, rawURL string, opts Option
 	if strings.TrimSpace(html) == "" {
 		return Result{}, fmt.Errorf("lightpanda engine: empty output: %s", lastLines(stderr.String(), 3))
 	}
+	// Lightpanda renders an error page (exit 0) for navigation failures such as
+	// DNS resolution errors; treat that as a fetch error, not content.
+	if strings.Contains(html, "<h1>Navigation failed</h1>") {
+		return Result{}, fmt.Errorf("lightpanda engine: navigation failed for %s", rawURL)
+	}
 	if opts.Debug {
 		fmt.Fprintf(os.Stderr, "[engine:lightpanda] %s -> %d bytes\n", rawURL, len(html))
 	}

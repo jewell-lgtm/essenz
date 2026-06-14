@@ -170,19 +170,9 @@ func (se *SemanticExtractor) filterTree(root *TextNode) *TextNode {
 
 // shouldFilterNode determines if a node should be filtered out
 func (se *SemanticExtractor) shouldFilterNode(node *TextNode) bool {
-	// NEVER filter content regions - they're identified as high-value content
-	if node.IsContentRegion {
-		return false
-	}
-
-	// NEVER filter nodes that contain content regions
-	if se.hasContentRegionDescendants(node) {
-		return false
-	}
-
 	tag := strings.ToLower(node.Tag)
 
-	// Always filter these tags
+	// Always filter these tags regardless of content region status
 	alwaysFilter := map[string]bool{
 		"script": true, "style": true, "noscript": true,
 		"meta": true, "link": true, "title": true,
@@ -191,18 +181,28 @@ func (se *SemanticExtractor) shouldFilterNode(node *TextNode) bool {
 		return true
 	}
 
-	// Filter navigation elements
+	// Filter navigation elements - takes priority over IsContentRegion
 	if se.filterNavigation {
 		if se.isNavigationElement(node) {
 			return true
 		}
 	}
 
-	// Filter presentational elements
+	// Filter presentational elements - takes priority over IsContentRegion
 	if se.filterPresentational {
 		if se.isPresentationalElement(node) {
 			return true
 		}
+	}
+
+	// Preserve content regions from other filtering
+	if node.IsContentRegion {
+		return false
+	}
+
+	// Preserve nodes that contain content regions
+	if se.hasContentRegionDescendants(node) {
+		return false
 	}
 
 	return false

@@ -14,6 +14,7 @@ package engine
 
 import (
 	"context"
+	"fmt"
 	"time"
 )
 
@@ -50,6 +51,22 @@ type Result struct {
 	// Engine is the name of the leaf engine that produced the result. For the
 	// auto engine this reports the tier that actually succeeded.
 	Engine string
+}
+
+// StatusError is returned by an engine when the server responds with a non-2xx
+// HTTP status. The auto engine uses the code to decide whether escalation is
+// worthwhile (e.g. 404/410/5xx are definitive; 401/403/429 may be solved by a
+// real browser).
+type StatusError struct {
+	Code   int
+	Status string
+}
+
+func (e *StatusError) Error() string {
+	if e.Status != "" {
+		return "unexpected status " + e.Status
+	}
+	return fmt.Sprintf("unexpected status %d", e.Code)
 }
 
 // Engine fetches a URL and returns HTML.
