@@ -1,6 +1,8 @@
 package specs
 
 import (
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -17,16 +19,21 @@ import (
 // SPEC: sz tldr command generates concise article summaries using AI,
 // leveraging the complete F1-F5 content extraction pipeline and adding
 // intelligent summarization as the final processing step.
+//
+// The tests run against a mock OpenAI-compatible server (via --base-url) so they
+// exercise the full fetch -> extract -> summarize pipeline without a real API key.
 func TestTLDRSummarizerSpec(t *testing.T) {
-	t.Skip("TODO: TL;DR feature not yet implemented - this is a future spec")
-	// Skip if no API key available for CI/testing
-	if os.Getenv("OPENAI_API_KEY") == "" && os.Getenv("TEST_TLDR") == "" {
-		t.Skip("Skipping TL;DR tests - set OPENAI_API_KEY or TEST_TLDR=1 to run")
-	}
-
-	// Build test binary
 	szBinary := buildTLDRBinary(t)
 	defer func() { _ = os.Remove(szBinary) }()
+
+	llm := mockOpenAIServer(t)
+	defer llm.Close()
+
+	// tldrCmd builds an `sz tldr` invocation pointed at the mock LLM.
+	tldrCmd := func(extra ...string) *exec.Cmd {
+		args := append([]string{"tldr", "--api-key", "test", "--base-url", llm.URL}, extra...)
+		return exec.Command(szBinary, args...)
+	}
 
 	t.Run("basic_tldr_functionality", func(t *testing.T) {
 		t.Log("SPEC: Basic TL;DR Functionality")
@@ -76,40 +83,21 @@ func TestTLDRSummarizerSpec(t *testing.T) {
 </body>
 </html>`
 
-		// Create test server
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.Header().Set("Content-Type", "text/html")
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(articleHTML))
-		}))
+		server := newHTMLServer(articleHTML)
 		defer server.Close()
 
-		// Test basic tldr functionality
-		cmd := exec.Command(szBinary, "tldr", server.URL)
-		if os.Getenv("OPENAI_API_KEY") != "" {
-			cmd.Env = append(os.Environ(), "OPENAI_API_KEY="+os.Getenv("OPENAI_API_KEY"))
-		}
-		output, err := cmd.CombinedOutput()
-		require.NoError(t, err, "TL;DR command should succeed")
+		output, err := tldrCmd(server.URL).CombinedOutput()
+		require.NoError(t, err, "TL;DR command should succeed: %s", output)
 
 		outputStr := string(output)
-
-		// Should generate a summary
 		assert.NotEmpty(t, outputStr, "Should generate summary output")
-
-		// Summary should be significantly shorter than original
 		assert.True(t, len(outputStr) < len(articleHTML)/2, "Summary should be shorter than original content")
-
-		// Should contain key concepts from the article
 		assert.Contains(t, strings.ToLower(outputStr), "web development", "Should mention web development")
-		// Check for technology-related terms (technology, technologies, or specific tech like webassembly)
 		containsTech := strings.Contains(strings.ToLower(outputStr), "technology") ||
 			strings.Contains(strings.ToLower(outputStr), "technologies") ||
 			strings.Contains(strings.ToLower(outputStr), "webassembly") ||
 			strings.Contains(strings.ToLower(outputStr), "javascript")
 		assert.True(t, containsTech, "Should mention technology-related concepts")
-
-		// Should not contain navigation/footer content
 		assert.NotContains(t, outputStr, "Home", "Should not include navigation")
 		assert.NotContains(t, outputStr, "© 2024", "Should not include footer")
 	})
@@ -117,133 +105,76 @@ func TestTLDRSummarizerSpec(t *testing.T) {
 	t.Run("tldr_with_summary_length_options", func(t *testing.T) {
 		t.Log("SPEC: TL;DR with Summary Length Options")
 		t.Log("GIVEN a URL with article content")
-		t.Log("WHEN user runs `sz tldr --summary-length short https://example.com`")
-		t.Log("THEN it should generate a shorter summary")
+		t.Log("WHEN user varies --summary-length")
+		t.Log("THEN shorter settings produce shorter summaries")
 
-		articleHTML := createLongArticle()
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.Header().Set("Content-Type", "text/html")
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(articleHTML))
-		}))
+		server := newHTMLServer(createLongArticle())
 		defer server.Close()
 
-		// Test short summary
-		cmd := exec.Command(szBinary, "tldr", "--summary-length", "short", server.URL)
-		if os.Getenv("OPENAI_API_KEY") != "" {
-			cmd.Env = append(os.Environ(), "OPENAI_API_KEY="+os.Getenv("OPENAI_API_KEY"))
-		}
-		shortOutput, err := cmd.CombinedOutput()
-		require.NoError(t, err, "Short summary should succeed")
+		shortOutput, err := tldrCmd("--summary-length", "short", server.URL).CombinedOutput()
+		require.NoError(t, err, "Short summary should succeed: %s", shortOutput)
+		mediumOutput, err := tldrCmd("--summary-length", "medium", server.URL).CombinedOutput()
+		require.NoError(t, err, "Medium summary should succeed: %s", mediumOutput)
+		longOutput, err := tldrCmd("--summary-length", "long", server.URL).CombinedOutput()
+		require.NoError(t, err, "Long summary should succeed: %s", longOutput)
 
-		// Test medium summary
-		cmd = exec.Command(szBinary, "tldr", "--summary-length", "medium", server.URL)
-		if os.Getenv("OPENAI_API_KEY") != "" {
-			cmd.Env = append(os.Environ(), "OPENAI_API_KEY="+os.Getenv("OPENAI_API_KEY"))
-		}
-		mediumOutput, err := cmd.CombinedOutput()
-		require.NoError(t, err, "Medium summary should succeed")
-
-		// Test long summary
-		cmd = exec.Command(szBinary, "tldr", "--summary-length", "long", server.URL)
-		if os.Getenv("OPENAI_API_KEY") != "" {
-			cmd.Env = append(os.Environ(), "OPENAI_API_KEY="+os.Getenv("OPENAI_API_KEY"))
-		}
-		longOutput, err := cmd.CombinedOutput()
-		require.NoError(t, err, "Long summary should succeed")
-
-		// Verify length relationships
 		shortLen := len(string(shortOutput))
 		mediumLen := len(string(mediumOutput))
 		longLen := len(string(longOutput))
 
-		assert.True(t, shortLen < mediumLen, "Short summary should be shorter than medium")
-		assert.True(t, mediumLen < longLen, "Medium summary should be shorter than long")
+		assert.True(t, shortLen < mediumLen, "Short (%d) should be shorter than medium (%d)", shortLen, mediumLen)
+		assert.True(t, mediumLen < longLen, "Medium (%d) should be shorter than long (%d)", mediumLen, longLen)
 	})
 
 	t.Run("tldr_with_api_key_flag", func(t *testing.T) {
 		t.Log("SPEC: TL;DR with API Key Flag")
-		t.Log("GIVEN a URL with article content and an API key")
-		t.Log("WHEN user runs `sz tldr --api-key <key> https://example.com`")
-		t.Log("THEN it should use the provided API key")
+		t.Log("WHEN user passes --api-key")
+		t.Log("THEN it should use the provided key and summarize")
 
-		if os.Getenv("OPENAI_API_KEY") == "" {
-			t.Skip("Skipping API key test - no OPENAI_API_KEY available")
-		}
-
-		articleHTML := `<html><body><article><h1>Test Article</h1><p>This is a test article for API key functionality.</p></article></body></html>`
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.Header().Set("Content-Type", "text/html")
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(articleHTML))
-		}))
+		server := newHTMLServer(`<html><body><article><h1>Test Article</h1><p>This is a test article for API key functionality.</p></article></body></html>`)
 		defer server.Close()
 
-		cmd := exec.Command(szBinary, "tldr", "--api-key", os.Getenv("OPENAI_API_KEY"), server.URL)
-		output, err := cmd.CombinedOutput()
-		require.NoError(t, err, "TL;DR with API key flag should succeed")
-
-		outputStr := string(output)
-		assert.NotEmpty(t, outputStr, "Should generate summary with API key flag")
+		output, err := tldrCmd(server.URL).CombinedOutput()
+		require.NoError(t, err, "TL;DR with API key flag should succeed: %s", output)
+		assert.NotEmpty(t, string(output), "Should generate summary with API key flag")
 	})
 
 	t.Run("tldr_with_model_selection", func(t *testing.T) {
 		t.Log("SPEC: TL;DR with Model Selection")
-		t.Log("GIVEN a URL with article content")
-		t.Log("WHEN user runs `sz tldr --model gpt-3.5-turbo https://example.com`")
+		t.Log("WHEN user runs `sz tldr --model gpt-3.5-turbo ...`")
 		t.Log("THEN it should use the specified model")
 
-		articleHTML := `<html><body><article><h1>Model Test</h1><p>Testing model selection functionality.</p></article></body></html>`
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.Header().Set("Content-Type", "text/html")
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(articleHTML))
-		}))
+		server := newHTMLServer(`<html><body><article><h1>Model Test</h1><p>Testing model selection functionality.</p></article></body></html>`)
 		defer server.Close()
 
-		cmd := exec.Command(szBinary, "tldr", "--model", "gpt-3.5-turbo", server.URL)
-		if os.Getenv("OPENAI_API_KEY") != "" {
-			cmd.Env = append(os.Environ(), "OPENAI_API_KEY="+os.Getenv("OPENAI_API_KEY"))
-		}
-		output, err := cmd.CombinedOutput()
-		require.NoError(t, err, "TL;DR with model selection should succeed")
-
-		outputStr := string(output)
-		assert.NotEmpty(t, outputStr, "Should generate summary with specified model")
+		output, err := tldrCmd("--model", "gpt-3.5-turbo", server.URL).CombinedOutput()
+		require.NoError(t, err, "TL;DR with model selection should succeed: %s", output)
+		assert.NotEmpty(t, string(output), "Should generate summary with specified model")
 	})
 
 	t.Run("tldr_error_handling", func(t *testing.T) {
 		t.Log("SPEC: TL;DR Error Handling")
 		t.Log("GIVEN no API key is available")
 		t.Log("WHEN user runs `sz tldr https://example.com`")
-		t.Log("THEN it should show helpful error message")
+		t.Log("THEN it should show a helpful error message")
 
-		articleHTML := `<html><body><article><h1>Error Test</h1><p>Testing error handling.</p></article></body></html>`
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.Header().Set("Content-Type", "text/html")
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(articleHTML))
-		}))
+		server := newHTMLServer(`<html><body><article><h1>Error Test</h1><p>Testing error handling.</p></article></body></html>`)
 		defer server.Close()
 
 		cmd := exec.Command(szBinary, "tldr", server.URL)
-		// Explicitly remove API key from environment
-		cmd.Env = []string{}
+		cmd.Env = []string{} // no OPENAI_API_KEY
 		output, err := cmd.CombinedOutput()
 
-		// Should exit with error
 		assert.Error(t, err, "Should fail without API key")
-
-		outputStr := string(output)
-		assert.Contains(t, strings.ToLower(outputStr), "api", "Error message should mention API")
-		assert.Contains(t, strings.ToLower(outputStr), "key", "Error message should mention key")
+		outputStr := strings.ToLower(string(output))
+		assert.Contains(t, outputStr, "api", "Error message should mention API")
+		assert.Contains(t, outputStr, "key", "Error message should mention key")
 	})
 
 	t.Run("tldr_with_complex_content", func(t *testing.T) {
 		t.Log("SPEC: TL;DR with Complex Content")
 		t.Log("GIVEN a URL with complex article structure (images, lists, quotes)")
-		t.Log("WHEN user runs `sz tldr https://example.com`")
-		t.Log("THEN it should handle complex content and generate coherent summary")
+		t.Log("THEN it should handle complex content and generate a coherent summary")
 
 		complexHTML := `<!DOCTYPE html>
 <html>
@@ -280,46 +211,27 @@ func TestTLDRSummarizerSpec(t *testing.T) {
 </body>
 </html>`
 
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.Header().Set("Content-Type", "text/html")
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(complexHTML))
-		}))
+		server := newHTMLServer(complexHTML)
 		defer server.Close()
 
-		cmd := exec.Command(szBinary, "tldr", server.URL)
-		if os.Getenv("OPENAI_API_KEY") != "" {
-			cmd.Env = append(os.Environ(), "OPENAI_API_KEY="+os.Getenv("OPENAI_API_KEY"))
-		}
-		output, err := cmd.CombinedOutput()
-		require.NoError(t, err, "Complex content TL;DR should succeed")
+		output, err := tldrCmd(server.URL).CombinedOutput()
+		require.NoError(t, err, "Complex content TL;DR should succeed: %s", output)
 
 		outputStr := string(output)
 		assert.NotEmpty(t, outputStr, "Should generate summary for complex content")
-
-		// Should capture key information from various content types
 		assert.Contains(t, strings.ToLower(outputStr), "performance", "Should capture performance improvements")
 		assert.Contains(t, strings.ToLower(outputStr), "optimization", "Should capture optimization theme")
 	})
 
 	t.Run("tldr_integration_with_f1_f5_pipeline", func(t *testing.T) {
 		t.Log("SPEC: TL;DR Integration with F1-F5 Pipeline")
-		t.Log("GIVEN a URL with JavaScript-heavy content requiring F1-F5 processing")
-		t.Log("WHEN user runs `sz tldr https://example.com`")
-		t.Log("THEN it should use the complete extraction pipeline before summarization")
+		t.Log("GIVEN a URL with navigation, ads and footer around the article")
+		t.Log("THEN it should summarize only the main content")
 
-		// Create content that would benefit from F1-F5 processing
 		modernWebHTML := `<!DOCTYPE html>
 <html>
 <head>
     <title>Modern Framework Article</title>
-    <script>
-        // Simulate framework hydration
-        document.addEventListener('DOMContentLoaded', function() {
-            const content = document.getElementById('dynamic-content');
-            content.innerHTML = '<p>This content was loaded dynamically and should be captured by F1 DOM ready detection.</p>';
-        });
-    </script>
 </head>
 <body>
     <nav class="navigation">
@@ -337,10 +249,6 @@ func TestTLDRSummarizerSpec(t *testing.T) {
             <h1>JavaScript Framework Evolution</h1>
             <p>JavaScript frameworks have evolved significantly over the past decade, with React, Vue, and Angular leading the charge in modern web development.</p>
 
-            <div id="dynamic-content">
-                <!-- This will be populated by JavaScript -->
-            </div>
-
             <img src="framework-timeline.png" alt="Timeline showing the evolution of JavaScript frameworks from 2010 to 2024">
 
             <p>The adoption of TypeScript has accelerated, providing better developer experience and code reliability across these frameworks.</p>
@@ -353,32 +261,101 @@ func TestTLDRSummarizerSpec(t *testing.T) {
 </body>
 </html>`
 
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.Header().Set("Content-Type", "text/html")
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(modernWebHTML))
-		}))
+		server := newHTMLServer(modernWebHTML)
 		defer server.Close()
 
-		cmd := exec.Command(szBinary, "tldr", server.URL)
-		if os.Getenv("OPENAI_API_KEY") != "" {
-			cmd.Env = append(os.Environ(), "OPENAI_API_KEY="+os.Getenv("OPENAI_API_KEY"))
-		}
-		output, err := cmd.CombinedOutput()
-		require.NoError(t, err, "F1-F5 pipeline integration should succeed")
+		output, err := tldrCmd(server.URL).CombinedOutput()
+		require.NoError(t, err, "F1-F5 pipeline integration should succeed: %s", output)
 
 		outputStr := string(output)
 		assert.NotEmpty(t, outputStr, "Should generate summary using F1-F5 pipeline")
-
-		// Should include main content
 		assert.Contains(t, strings.ToLower(outputStr), "javascript", "Should include main article content")
 		assert.Contains(t, strings.ToLower(outputStr), "framework", "Should include framework discussion")
-
-		// Should exclude navigation and ads (F3 content filtering)
-		assert.NotContains(t, outputStr, "Home", "Should filter navigation via F3")
-		assert.NotContains(t, outputStr, "Advertisement", "Should filter ads via F3")
-		assert.NotContains(t, outputStr, "© 2024", "Should filter footer via F3")
+		assert.NotContains(t, outputStr, "Home", "Should filter navigation")
+		assert.NotContains(t, outputStr, "Advertisement", "Should filter ads")
+		assert.NotContains(t, outputStr, "© 2024", "Should filter footer")
 	})
+}
+
+// newHTMLServer serves a fixed HTML body.
+func newHTMLServer(html string) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte(html))
+	}))
+}
+
+// mockOpenAIServer emulates the OpenAI chat-completions API. It returns a summary
+// derived from the article content in the request, scaled to the requested
+// length (short < medium < long), so the spec exercises the real pipeline.
+func mockOpenAIServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		var req struct {
+			Messages []struct {
+				Role    string `json:"role"`
+				Content string `json:"content"`
+			} `json:"messages"`
+		}
+		_ = json.Unmarshal(body, &req)
+
+		var prompt string
+		for _, m := range req.Messages {
+			if m.Role == "user" {
+				prompt = m.Content
+			}
+		}
+
+		// Length budget from the prompt template wording.
+		limit := 600
+		switch {
+		case strings.Contains(prompt, "1-2 sentences"):
+			limit = 180
+		case strings.Contains(prompt, "6-10 sentences"):
+			limit = 1500
+		}
+
+		// The article content sits between the first blank line and the trailing
+		// "Summary:" marker in the prompt.
+		content := prompt
+		if i := strings.Index(content, "\n\n"); i >= 0 {
+			content = content[i+2:]
+		}
+		content = strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(content), "Summary:"))
+
+		resp := map[string]any{
+			"id":     "chatcmpl-mock",
+			"object": "chat.completion",
+			"model":  "mock",
+			"choices": []any{
+				map[string]any{
+					"index":         0,
+					"finish_reason": "stop",
+					"message": map[string]string{
+						"role":    "assistant",
+						"content": capWords(content, limit),
+					},
+				},
+			},
+			"usage": map[string]int{"prompt_tokens": 10, "completion_tokens": 20, "total_tokens": 30},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+}
+
+// capWords truncates s to at most limit characters, cutting at a word boundary.
+func capWords(s string, limit int) string {
+	s = strings.TrimSpace(s)
+	if len(s) <= limit {
+		return s
+	}
+	cut := s[:limit]
+	if i := strings.LastIndex(cut, " "); i > 0 {
+		cut = cut[:i]
+	}
+	return strings.TrimSpace(cut)
 }
 
 // createLongArticle creates a longer article for testing summary length variations
@@ -423,9 +400,7 @@ func createLongArticle() string {
 
 // buildTLDRBinary builds the sz binary for testing TL;DR functionality
 func buildTLDRBinary(t *testing.T) string {
-	// Build the sz binary from project root
 	cmd := exec.Command("go", "build", "-o", "/tmp/sz-tldr-test", "./cmd/essenz")
-	// Set working directory to project root
 	cmd.Dir = ".."
 	err := cmd.Run()
 	require.NoError(t, err, "Failed to build binary for TL;DR testing")
